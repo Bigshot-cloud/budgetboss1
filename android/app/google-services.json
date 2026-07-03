@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "214187203412",
+    "project_id": "budgetboss1-ca211",
+    "storage_bucket": "budgetboss1-ca211.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:214187203412:android:6aee584003f36108cfc6c1",
+        "android_client_info": {
+          "package_name": "com.team1.budgetboss1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "214187203412-ls0768j25kesvjtde5vr6h4u4serkrvr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAz3dvK771i-2w0-J2VEnCRdsCnid5CgZY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "214187203412-ls0768j25kesvjtde5vr6h4u4serkrvr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
