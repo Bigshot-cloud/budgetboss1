@@ -1,4 +1,3 @@
-// ignore_for_file: non_const_argument_for_const_parameter
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -24,20 +23,19 @@ class TransactionModel {
   });
 
   factory TransactionModel.fromMap(Map<String, dynamic> map, String id) {
+    final category = (map['category'] ?? '').toString();
+
     return TransactionModel(
       id: id,
-      title: map['title'] ?? '',
-      amount: (map['amount'] ?? 0).toDouble(),
+      title: (map['title'] ?? '').toString(),
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
       date: (map['date'] as Timestamp).toDate(),
-      category: map['category'] ?? '',
+      category: category,
       type: TransactionType.values.firstWhere(
-        (e) => e.toString() == map['type'],
+            (e) => e.toString() == map['type'],
         orElse: () => TransactionType.expense,
       ),
-      icon: IconData(
-        map['iconCode'] as int? ?? Icons.help_outline.codePoint,
-        fontFamily: 'MaterialIcons',
-      ),
+      icon: _getCategoryIcon(category),
     );
   }
 
@@ -48,7 +46,41 @@ class TransactionModel {
       'date': Timestamp.fromDate(date),
       'category': category,
       'type': type.toString(),
-      'iconCode': icon.codePoint,
     };
+  }
+
+  static IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'food':
+        return Icons.restaurant;
+
+      case 'transport':
+        return Icons.directions_car;
+
+      case 'shopping':
+        return Icons.shopping_bag;
+
+      case 'salary':
+      case 'income':
+        return Icons.account_balance_wallet;
+
+      case 'bills':
+        return Icons.receipt_long;
+
+      case 'health':
+        return Icons.local_hospital;
+
+      case 'education':
+        return Icons.school;
+
+      case 'entertainment':
+        return Icons.movie;
+
+      case 'savings':
+        return Icons.savings;
+
+      default:
+        return Icons.help_outline;
+    }
   }
 }
