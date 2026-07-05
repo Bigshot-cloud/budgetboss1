@@ -11,7 +11,12 @@ class NotificationProvider with ChangeNotifier {
   List<NotificationModel> get notifications => [..._notifications];
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
 
+  String? _currentUserId;
+
   void setUser(String? userId) {
+    if (_currentUserId == userId) return;
+    _currentUserId = userId;
+
     _subscription?.cancel();
     if (userId != null) {
       _subscription = _firestore

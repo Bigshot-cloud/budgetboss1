@@ -87,27 +87,38 @@ class ProfileScreen extends StatelessWidget {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen()));
             }),
             const SizedBox(height: 30),
-            TextButton(
-              onPressed: () async {
-                await context.read<AuthProvider>().logout();
-                if (context.mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    (route) => false,
-                  );
-                }
-              },
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.logout, color: AppColors.expense),
-                  SizedBox(width: 10),
-                  Text('Log Out', style: TextStyle(color: AppColors.expense, fontWeight: FontWeight.bold)),
-                ],
+            Container(
+              width: double.infinity,
+              height: 55,
+              margin: const EdgeInsets.only(bottom: 20),
+              child: ElevatedButton(
+                onPressed: () async {
+                  await context.read<AuthProvider>().logout();
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.expense.withValues(alpha: 0.1),
+                  foregroundColor: AppColors.expense,
+                  side: const BorderSide(color: AppColors.expense, width: 1),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.logout),
+                    SizedBox(width: 10),
+                    Text('Log Out', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 10),
           ],
         ),
       ),

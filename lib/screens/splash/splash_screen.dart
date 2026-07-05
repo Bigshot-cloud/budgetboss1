@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/constants/app_colors.dart';
-import '../auth/login_screen.dart';
-import '../main_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -25,26 +22,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
     _controller.forward();
-
-    _navigateToNext();
-  }
-
-  Future<void> _navigateToNext() async {
-    await Future.delayed(const Duration(seconds: 3));
-    if (mounted) {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-      }
-    }
   }
 
   @override

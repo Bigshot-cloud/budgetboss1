@@ -14,7 +14,12 @@ class TransactionProvider with ChangeNotifier {
     return _transactions.take(5).toList();
   }
 
+  String? _currentUserId;
+
   void setUser(String? userId) {
+    if (_currentUserId == userId) return;
+    _currentUserId = userId;
+
     _subscription?.cancel();
     if (userId != null) {
       _subscription = _service.getTransactionsStream(userId).listen((data) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 
 class PreferencesScreen extends StatefulWidget {
   const PreferencesScreen({super.key});
@@ -21,9 +22,15 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
     final user = context.read<AuthProvider>().user;
     if (user != null) {
       _selectedCurrency = user.preferences['currency'] ?? 'GH₵';
-      _selectedTheme = user.preferences['theme'] == 'dark' ? 'Dark' : 'Light';
+      _selectedTheme = _formatThemeMode(context.read<ThemeProvider>().themeMode);
       _selectedLanguage = user.preferences['language'] == 'en' ? 'English' : 'French';
     }
+  }
+
+  String _formatThemeMode(ThemeMode mode) {
+    if (mode == ThemeMode.light) return 'Light';
+    if (mode == ThemeMode.dark) return 'Dark';
+    return 'System';
   }
 
   void _updatePreference(String key, dynamic value) async {
@@ -58,8 +65,11 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             _selectedTheme,
             ['Light', 'Dark', 'System'],
             (value) {
-              setState(() => _selectedTheme = value!);
-              _updatePreference('theme', value?.toLowerCase());
+              if (value != null) {
+                setState(() => _selectedTheme = value);
+                context.read<ThemeProvider>().setTheme(value);
+                _updatePreference('theme', value.toLowerCase());
+              }
             },
           ),
           _buildPreferenceItem(
@@ -82,18 +92,21 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
       margin: const EdgeInsets.only(bottom: 15),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: ListTile(
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.white)),
         subtitle: Text(currentVal, style: const TextStyle(color: AppColors.gold)),
-        trailing: DropdownButton<String>(
-          underline: const SizedBox(),
-          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.grey),
-          onChanged: onChanged,
-          items: options.map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
+        trailing: Theme(
+          data: Theme.of(context).copyWith(canvasColor: AppColors.navy),
+          child: DropdownButton<String>(
+            underline: const SizedBox(),
+            icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.grey),
+            onChanged: onChanged,
+            items: options.map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value, style: const TextStyle(color: AppColors.white)),
+              );
+            }).toList(),
+          ),
         ),
       ),
     );

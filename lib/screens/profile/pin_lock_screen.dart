@@ -34,9 +34,10 @@ class _PinLockScreenState extends State<PinLockScreen> {
   }
 
   void _verifyPin() async {
-    final success = await context.read<SecurityProvider>().verifyPin(_pin.join());
+    final securityProvider = context.read<SecurityProvider>();
+    final success = await securityProvider.verifyPin(_pin.join());
     if (success) {
-      context.read<SecurityProvider>().unlock();
+      securityProvider.unlock();
     } else {
       setState(() {
         _pin.clear();
@@ -48,15 +49,17 @@ class _PinLockScreenState extends State<PinLockScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.darkNavy,
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const Spacer(),
             const FaIcon(FontAwesomeIcons.lock, size: 50, color: AppColors.gold),
             const SizedBox(height: 20),
             const Text(
               'App Locked',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.white),
             ),
             const SizedBox(height: 10),
             const Text('Enter your PIN to continue', style: TextStyle(color: AppColors.grey)),

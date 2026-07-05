@@ -1,3 +1,7 @@
+plugins {
+    id("com.google.gms.google-services") version "4.4.1" apply false
+}
+
 allprojects {
     repositories {
         google()
@@ -24,20 +28,19 @@ subprojects {
                 } catch (e: Exception) {}
             }
             
-            // Force JVM 11 for all Kotlin and Java tasks to fix inconsistency
+            // Force JVM 17 for all tasks to fix inconsistency
             project.tasks.withType<JavaCompile>().configureEach {
-                sourceCompatibility = "11"
-                targetCompatibility = "11"
+                sourceCompatibility = "17"
+                targetCompatibility = "17"
             }
         }
     }
 }
 
-// Separate block for Kotlin to avoid script compilation errors if types are not found
 subprojects {
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
         compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
 }

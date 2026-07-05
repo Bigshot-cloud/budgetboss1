@@ -1,7 +1,7 @@
-import 'gemini_services.dart';
+import 'openai_service.dart';
 
 class AiService {
-  final GeminiService _gemini = GeminiService();
+  final _openAI = OpenAIService();
 
   Future<String> getResponse(
       String query, {
@@ -13,69 +13,51 @@ class AiService {
     String q = query.toLowerCase();
 
     // 🟢 1. GREETING LAYER
-    if (q.contains("hi") || q.contains("hello")) {
-      return "👋 Hi! I'm your BudgetBoss AI Financial Analyst. Ask me about spending, savings, or budgeting.";
+    if (q.contains("hi") || q.contains("hello") || q.contains("hey")) {
+      return "👋 Hi! I'm your BudgetBoss AI Financial Analyst. Ask me about your spending, savings goals, or budgeting advice.";
     }
 
     // 🟡 2. SPENDING ANALYSIS ENGINE
-    if (q.contains("spend") || q.contains("expense") || q.contains("money")) {
+    if (q.contains("spend") || q.contains("expense") || q.contains("money") || q.contains("balance")) {
       if (totalBalance != null && totalSpent != null) {
+        double currentBalance = totalBalance;
+        double usage = totalBalance > 0 ? (totalSpent / (totalSpent + totalBalance)) * 100 : 100;
 
-        double usage = (totalSpent / totalBalance) * 100;
+        if (q.contains("balance")) {
+           return "Your current total balance is GH₵ ${totalBalance.toStringAsFixed(2)}. Keep up the great work!";
+        }
 
         if (usage >= 80) {
-          return "⚠️ High spending alert! You've used ${usage.toStringAsFixed(1)}% of your budget. Reduce non-essential expenses immediately.";
+          return "⚠️ High spending alert! You've used ${usage.toStringAsFixed(1)}% of your available funds. Consider reducing non-essential expenses.";
         } else if (usage >= 50) {
-          return "📊 You're halfway through your budget (${usage.toStringAsFixed(1)}%). Monitor your spending carefully.";
+          return "📊 You've spent about halfway through your available funds (${usage.toStringAsFixed(1)}%). Monitor your upcoming bills.";
         } else {
-          return "✅ You're doing well! Only ${usage.toStringAsFixed(1)}% of your budget used.";
+          return "✅ You're doing well! You've only used ${usage.toStringAsFixed(1)}% of your funds so far.";
         }
       }
     }
 
-    // 🔵 3. CATEGORY ANALYSIS ENGINE
-    if (q.contains("food") || q.contains("transport") || q.contains("shopping")) {
-      if (categorySpending != null) {
-        String insight = "";
+    // 🤖 3. FULL AI FALLBACK (GEMINI BRAIN)
+    try {
+      final response = await _openAI.analyzeFinance(
+          """
+You are BudgetBoss AI, a personal finance assistant. 
 
-        categorySpending.forEach((key, value) {
-          if (value > 500) {
-            insight += "⚠️ $key spending is high at GHS $value. ";
-          }
-        });
-
-        if (insight.isNotEmpty) {
-          return insight;
-        }
-      }
-    }
-
-    // 🟣 4. BUDGET + SAVINGS STRATEGY (AI POWERED)
-    if (q.contains("save") || q.contains("budget")) {
-      return await _gemini.askGemini(
-        "Act as a professional financial advisor. Give short, practical budgeting advice for this query: $query",
-      );
-    }
-
-    // 🔴 5. DEBT STRATEGY ENGINE
-    if (q.contains("debt") || q.contains("loan")) {
-      return await _gemini.askGemini(
-        "Explain a simple debt repayment strategy (like avalanche or snowball) in a beginner-friendly way: $query",
-      );
-    }
-
-    // 🤖 6. FULL AI FALLBACK (GEMINI BRAIN)
-    return await _gemini.askGemini(
-        """
-You are BudgetBoss AI, a personal finance assistant.
-
-Rules:
-- Be short and practical
-- Focus on saving money, budgeting, and spending control
-- Give real-life financial advice
+Context:
+- Current user balance: ${totalBalance ?? 'Unknown'}
+- Total spent this month: ${totalSpent ?? 'Unknown'}
 
 User question: $query
+
+Rules:
+- Be short, helpful and professional.
+- Focus on saving money, budgeting, and debt control.
+- If asking about specific app features, mention sections like 'Debt Tracker' or 'Savings Goals'.
 """
-    );
+      );
+      return response;
+    } catch (e) {
+      return "I'm having a little trouble connecting right now. 🛠️ Please try again in a moment, or check your dashboard for your latest stats!";
+    }
   }
 }

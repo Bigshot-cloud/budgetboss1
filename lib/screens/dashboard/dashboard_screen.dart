@@ -12,7 +12,6 @@ import 'package:budgetboss_app/screens/notifications/notifications_screen.dart';
 import 'package:budgetboss_app/screens/transactions/transactions_screen.dart';
 import 'package:budgetboss_app/screens/debt/debt_screen.dart';
 import 'package:budgetboss_app/screens/savings/savings_screen.dart';
-import 'package:budgetboss_app/core/services/sms_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -24,26 +23,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isOverview = true;
   String _timeFilter = 'This Month';
-  final SmsService _smsService = SmsService();
-
-  @override
-  void initState() {
-    super.initState();
-    _startSmsListener();
-  }
-
-  void _startSmsListener() {
-    _smsService.startListening((transaction) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('New transaction detected: ${transaction['title']}'),
-            backgroundColor: AppColors.income,
-          ),
-        );
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -183,43 +162,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
     double income = 0;
     double expense = 0;
     for (var tx in filteredTransactions) {
-      if (tx.type == TransactionType.income) income += tx.amount;
-      else if (tx.type == TransactionType.expense) expense += tx.amount;
+      if (tx.type == TransactionType.income) {
+        income += tx.amount;
+      } else if (tx.type == TransactionType.expense) {
+        expense += tx.amount;
+      }
     }
 
-    return SingleChildScrollView(
+    return ListView(
       key: const ValueKey('Overview'),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(20.0),
+      children: [
+        const BudgetBannerWidget(),
+        const SizedBox(height: 20),
+        _buildBalanceCard(income - expense),
+        const SizedBox(height: 25),
+        _buildSummaryRow(income, expense),
+        const SizedBox(height: 30),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const BudgetBannerWidget(),
-            const SizedBox(height: 20),
-            _buildBalanceCard(income - expense),
-            const SizedBox(height: 25),
-            _buildSummaryRow(income, expense),
-            const SizedBox(height: 30),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Recent Transactions',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const TransactionsScreen()));
-                  },
-                  child: const Text('See All', style: TextStyle(color: AppColors.gold)),
-                ),
-              ],
+            const Text(
+              'Recent Transactions',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.white),
             ),
-            const SizedBox(height: 10),
-            _buildRecentTransactions(filteredTransactions.take(5).toList()),
+            TextButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const TransactionsScreen()));
+              },
+              child: const Text('See All', style: TextStyle(color: AppColors.gold)),
+            ),
           ],
         ),
-      ),
+        const SizedBox(height: 10),
+        _buildRecentTransactions(filteredTransactions.take(5).toList()),
+        const SizedBox(height: 20),
+      ],
     );
   }
 
@@ -248,7 +226,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 'Total Balance',
                 style: TextStyle(color: AppColors.grey, fontSize: 16),
               ),
-              _buildTimeFilter(),
+              _buildTimeFilterWidget(),
             ],
           ),
           const SizedBox(height: 10),
@@ -311,7 +289,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildTimeFilter() {
+  Widget _buildTimeFilterWidget() {
     return PopupMenuButton<String>(
       onSelected: (String result) {
         setState(() {
@@ -385,15 +363,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return const Center(child: Text('No transactions yet', style: TextStyle(color: AppColors.grey)));
     }
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: transactions.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final tx = transactions[index];
+    return Column(
+      children: transactions.map((tx) {
         final isIncome = tx.type == TransactionType.income;
         return Container(
+          margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppColors.navy,
@@ -438,7 +412,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         );
-      },
+      }).toList(),
     );
   }
 }

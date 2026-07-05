@@ -1,13 +1,12 @@
 import 'dart:convert';
-import 'package:telephony/telephony.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'gemini_services.dart';
+import 'openai_service.dart';
 
-class SmsService {
+/*class SmsService {
   final Telephony telephony = Telephony.instance;
-  final GeminiService _gemini = GeminiService();
+  final _openAI = OpenAIService();
 
   final Set<String> _processedSms = {}; // 🧠 duplicate prevention
 
@@ -40,7 +39,7 @@ class SmsService {
       listenInBackground: false,
     );
   }
-
+*/
   // =========================
   // 🟡 BASIC DETECTION
   // =========================
@@ -76,29 +75,26 @@ class SmsService {
     return "expense";
   }
 
-  // =========================
+  /*=========================
   // 🧠 AI ENRICHMENT
   // =========================
 
-  Future<Map<String, dynamic>> _enrichWithAI(
-      String sms, double amount, String type) async {
-    try {
-      final response = await _gemini.askGemini("""
-You are a financial SMS analyzer.
+  final aiResponse = await _openAI.analyzeFinance("""
+Extract structured transaction data:
 
-Extract structured data from this SMS:
+SMS:
+$body
 
-SMS: $sms
-Amount detected: $amount
-Type detected: $type
+Amount: $amount
+Type: $type
 
-Return ONLY JSON:
+Return JSON ONLY:
 {
-  "merchant": "Extracted merchant or source name",
-  "category": "food | transport | shopping | bills | income | other",
-  "confidence": 0,
-  "corrected_type": "income or expense",
-  "note": "brief summary"
+  "merchant": "",
+  "category": "",
+  "corrected_type": "",
+  "confidence": 0-100,
+  "note": ""
 }
 """);
 
@@ -163,4 +159,4 @@ Return ONLY JSON:
       "note": data["note"],
     });
   }
-}
+}*/

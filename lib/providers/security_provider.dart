@@ -7,7 +7,8 @@ class SecurityProvider with ChangeNotifier {
   bool _isLocked = false;
   bool _isPinCreated = false;
   Timer? _autoLockTimer;
-  Duration _lockDuration = Duration.zero;
+  Duration _lockDuration = const Duration(days: 365); // Default to Never
+  String? _lastDurationStr;
 
   bool get isLocked => _isLocked;
   bool get isPinCreated => _isPinCreated;
@@ -20,6 +21,14 @@ class SecurityProvider with ChangeNotifier {
     final pin = await _securityService.getPin();
     _isPinCreated = pin != null && pin.isNotEmpty;
     notifyListeners();
+  }
+
+  void syncSettings(Map<String, dynamic> settings) {
+    final durationStr = settings['appLockDuration'] ?? 'Never';
+    if (_lastDurationStr == durationStr) return;
+    _lastDurationStr = durationStr;
+    
+    setLockDuration(durationStr);
   }
 
   void setLockDuration(String durationStr) {
@@ -40,18 +49,20 @@ class SecurityProvider with ChangeNotifier {
         _lockDuration = const Duration(minutes: 10);
         break;
       default:
-        _lockDuration = const Duration(days: 365); // Never effectively
+        _lockDuration = const Duration(days: 365); // Never
     }
     resetTimer();
   }
 
   void resetTimer() {
     _autoLockTimer?.cancel();
-    if (_lockDuration == const Duration(days: 365)) return;
+    if (_lockDuration == const Duration(days: 365) || _isLocked) return;
     
     _autoLockTimer = Timer(_lockDuration, () {
-      _isLocked = true;
-      notifyListeners();
+      if (!_isLocked) {
+        _isLocked = true;
+        notifyListeners();
+      }
     });
   }
 
@@ -65,11 +76,6 @@ class SecurityProvider with ChangeNotifier {
     await _securityService.setPin(newPin);
     _isPinCreated = true;
     notifyListeners();
-  }
-
-  void syncSettings(Map<String, dynamic> settings) {
-    final duration = settings['appLockDuration'] ?? 'Never';
-    setLockDuration(duration);
   }
 
   Future<bool> verifyPin(String pin) async {

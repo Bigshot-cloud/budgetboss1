@@ -34,13 +34,15 @@ class _MainScreenState extends State<MainScreen> {
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
         color: AppColors.navy,
-        child: SizedBox(
+        child: Container(
           height: 60,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(child: _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home')),
               Expanded(child: _buildNavItem(1, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 'History')),
-              const Expanded(child: SizedBox()), // Center notch space
+              const SizedBox(width: 70), // Explicit space for FAB
               Expanded(child: _buildNavItem(2, Icons.pie_chart_outline, Icons.pie_chart, 'Budget')),
               Expanded(child: _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile')),
             ],
