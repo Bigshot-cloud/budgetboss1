@@ -1,14 +1,15 @@
 import 'dart:convert';
+import 'package:telephony/telephony.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'openai_service.dart';
 
-/*class SmsService {
+class SmsService {
   final Telephony telephony = Telephony.instance;
   final _openAI = OpenAIService();
 
-  final Set<String> _processedSms = {}; // 🧠 duplicate prevention
+  final Set<String> _processedSms = {}; // duplicate prevention
 
   void startListening(Function(Map<String, dynamic>) onTransaction) {
     telephony.listenIncomingSms(
@@ -16,89 +17,82 @@ import 'openai_service.dart';
         String body = message.body ?? "";
         String smsId = message.id?.toString() ?? body.hashCode.toString();
 
-        // 🚨 1. Duplicate prevention
         if (_processedSms.contains(smsId)) return;
         _processedSms.add(smsId);
 
         if (!_isMoneySms(body)) return;
 
-        // 🧠 2. Extract raw data
         double amount = _extractAmount(body);
+        if (amount <= 0) return; // Ignore if no valid amount found
+
         String type = _detectType(body);
 
-        // 🧠 3. AI enrichment
-        Map<String, dynamic> enriched =
-        await _enrichWithAI(body, amount, type);
+        Map<String, dynamic> enriched = await _enrichWithAI(body, amount, type);
 
-        // 🔥 4. Save to Firebase
         await _saveToFirebase(enriched);
 
-        // 📲 5. Send to UI
         onTransaction(enriched);
       },
       listenInBackground: false,
     );
   }
-*/
-  // =========================
-  // 🟡 BASIC DETECTION
-  // =========================
 
   bool _isMoneySms(String sms) {
     String text = sms.toLowerCase();
-
     return text.contains("received") ||
         text.contains("sent") ||
         text.contains("momo") ||
         text.contains("mobile money") ||
         text.contains("transfer") ||
         text.contains("ghs") ||
+        text.contains("ghc") ||
         text.contains("paid") ||
         text.contains("credited") ||
         text.contains("debited");
   }
 
   double _extractAmount(String sms) {
-    RegExp reg = RegExp(r'(\d+(\.\d{1,2})?)');
+    // Look for GHS/Ghc followed by a number
+    RegExp reg = RegExp(r'(?:GHS|Ghc|Amt:?)\s*(\d+(?:\.\d{1,2})?)', caseSensitive: false);
     Match? match = reg.firstMatch(sms);
-    return double.tryParse(match?.group(0) ?? "0") ?? 0.0;
+    if (match != null) {
+      return double.tryParse(match.group(1) ?? "0") ?? 0.0;
+    }
+    
+    // Fallback to first number found if GHS is not present
+    RegExp fallbackReg = RegExp(r'(\d+(?:\.\d{1,2})?)');
+    Match? fallbackMatch = fallbackReg.firstMatch(sms);
+    return double.tryParse(fallbackMatch?.group(0) ?? "0") ?? 0.0;
   }
 
   String _detectType(String sms) {
     String text = sms.toLowerCase();
-
-    if (text.contains("received") ||
-        text.contains("credited") ||
-        text.contains("deposited")) {
-      return "income";
+    if (text.contains("received") || text.contains("credited") || text.contains("deposited") || text.contains("from")) {
+       // Often "Payment received from..." or "Cash in received..."
+       if (text.contains("sent to") || text.contains("paid to")) return "expense";
+       return "income";
     }
     return "expense";
   }
 
-  /*=========================
-  // 🧠 AI ENRICHMENT
-  // =========================
-
-  final aiResponse = await _openAI.analyzeFinance("""
-Extract structured transaction data:
-
-SMS:
-$body
-
-Amount: $amount
-Type: $type
+  Future<Map<String, dynamic>> _enrichWithAI(String sms, double amount, String type) async {
+    try {
+      final response = await _openAI.analyzeFinance("""
+Extract structured transaction data from this SMS:
+SMS: $sms
+Amount detected: $amount
+Type detected: $type
 
 Return JSON ONLY:
 {
-  "merchant": "",
-  "category": "",
-  "corrected_type": "",
-  "confidence": 0-100,
-  "note": ""
+  "merchant": "Extracted merchant or person name",
+  "category": "food | transport | shopping | bills | income | other",
+  "confidence": 0,
+  "corrected_type": "income or expense",
+  "note": "brief summary"
 }
-""");
+""", isChat: false);
 
-      // Attempt to clean JSON (Gemini sometimes adds markdown blocks)
       String cleaned = response.replaceAll("```json", "").replaceAll("```", "").trim();
       Map<String, dynamic> aiData = jsonDecode(cleaned);
 
@@ -135,10 +129,6 @@ Return JSON ONLY:
     }
   }
 
-  // =========================
-  // 🔥 FIREBASE STORAGE
-  // =========================
-
   Future<void> _saveToFirebase(Map<String, dynamic> data) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -159,4 +149,4 @@ Return JSON ONLY:
       "note": data["note"],
     });
   }
-}*/
+}

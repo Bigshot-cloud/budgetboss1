@@ -9,18 +9,19 @@ import '../../widgets/custom_text_field.dart';
 class DebtScreen extends StatelessWidget {
   const DebtScreen({super.key});
 
-  void _showAddDebtDialog(BuildContext context) {
-    final titleController = TextEditingController();
-    final amountController = TextEditingController();
-    final paidController = TextEditingController();
-    DateTime selectedDate = DateTime.now();
+  void _showDebtDialog(BuildContext context, {DebtModel? debt}) {
+    final isEditing = debt != null;
+    final titleController = TextEditingController(text: debt?.title);
+    final amountController = TextEditingController(text: debt?.amount.toString());
+    final paidController = TextEditingController(text: debt?.paidAmount.toString());
+    DateTime selectedDate = debt?.dueDate ?? DateTime.now();
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.navy,
-          title: const Text('Add New Debt', style: TextStyle(color: AppColors.white)),
+          backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+          title: Text(isEditing ? 'Edit Debt' : 'Add New Debt', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -33,9 +34,14 @@ class DebtScreen extends StatelessWidget {
                 const SizedBox(height: 15),
                 ListTile(
                   title: const Text('Due Date', style: TextStyle(color: AppColors.grey)),
-                  subtitle: Text(DateFormat('MMM dd, yyyy').format(selectedDate), style: const TextStyle(color: AppColors.white)),
+                  subtitle: Text(DateFormat('MMM dd, yyyy').format(selectedDate), style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                   onTap: () async {
-                    final date = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime.now(), lastDate: DateTime(2100));
+                    final date = await showDatePicker(
+                        context: context, 
+                        initialDate: selectedDate, 
+                        firstDate: DateTime(2000), 
+                        lastDate: DateTime(2100)
+                    );
                     if (date != null) setDialogState(() => selectedDate = date);
                   },
                 ),
@@ -47,18 +53,27 @@ class DebtScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 if (titleController.text.isNotEmpty && amountController.text.isNotEmpty) {
+                  final amount = double.tryParse(amountController.text) ?? 0;
+                  final paid = double.tryParse(paidController.text) ?? 0;
+                  
                   final newDebt = DebtModel(
-                    id: '',
+                    id: debt?.id ?? '',
                     title: titleController.text,
-                    amount: double.tryParse(amountController.text) ?? 0,
-                    paidAmount: double.tryParse(paidController.text) ?? 0,
+                    amount: amount,
+                    paidAmount: paid,
                     dueDate: selectedDate,
+                    isPaid: paid >= amount && amount > 0,
                   );
-                  context.read<DebtProvider>().addDebt(newDebt);
+
+                  if (isEditing) {
+                    context.read<DebtProvider>().updateDebt(newDebt);
+                  } else {
+                    context.read<DebtProvider>().addDebt(newDebt);
+                  }
                   Navigator.pop(context);
                 }
               },
-              child: const Text('Add'),
+              child: Text(isEditing ? 'Update' : 'Add'),
             ),
           ],
         ),
@@ -70,44 +85,38 @@ class DebtScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final debtProvider = context.watch<DebtProvider>();
     final debts = debtProvider.debts;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Debt Tracker'),
         actions: [
-          IconButton(onPressed: () => _showAddDebtDialog(context), icon: const Icon(Icons.add)),
+          IconButton(onPressed: () => _showDebtDialog(context), icon: const Icon(Icons.add)),
         ],
       ),
-      body: SingleChildScrollView(
+      body: ListView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            _buildDebtSummaryCard(debtProvider.totalDebt, (debtProvider.overallProgress * 100).round()),
-            const SizedBox(height: 30),
-            if (debts.isEmpty)
-              const Center(child: Text('No debts tracked yet', style: TextStyle(color: AppColors.grey)))
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: debts.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 20),
-                itemBuilder: (context, index) {
-                  final debt = debts[index];
-                  return _buildDebtItem(context, debt);
-                },
-              ),
-          ],
-        ),
+        children: [
+          _buildDebtSummaryCard(context, debtProvider.totalDebt, (debtProvider.overallProgress * 100).round()),
+          const SizedBox(height: 30),
+          if (debts.isEmpty)
+            Center(child: Text('No debts tracked yet', style: TextStyle(color: colorScheme.onSurfaceVariant)))
+          else
+            ...debts.map((debt) => Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: _buildDebtItem(context, debt),
+            )),
+        ],
       ),
     );
   }
 
-  Widget _buildDebtSummaryCard(double total, int percentage) {
+  Widget _buildDebtSummaryCard(BuildContext context, double total, int percentage) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.navy,
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -116,18 +125,18 @@ class DebtScreen extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Total Debt', style: TextStyle(color: AppColors.grey)),
+              Text('Total Debt', style: TextStyle(color: colorScheme.onSurfaceVariant)),
               const SizedBox(height: 10),
               Text(
                 'GH₵ ${total.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.white),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
               ),
             ],
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text('Paid Off', style: TextStyle(color: AppColors.grey)),
+              Text('Paid Off', style: TextStyle(color: colorScheme.onSurfaceVariant)),
               const SizedBox(height: 10),
               Text(
                 '$percentage%',
@@ -141,6 +150,7 @@ class DebtScreen extends StatelessWidget {
   }
 
   Widget _buildDebtItem(BuildContext context, DebtModel debt) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Dismissible(
       key: Key(debt.id),
       direction: DismissDirection.endToStart,
@@ -154,7 +164,7 @@ class DebtScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.navy,
+          color: colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -163,24 +173,48 @@ class DebtScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(debt.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.white)),
-                Icon(debt.isPaid ? Icons.check_circle : Icons.pending, color: debt.isPaid ? AppColors.income : AppColors.gold),
+                Expanded(
+                  child: Text(
+                    debt.title, 
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Icon(debt.isPaid ? Icons.check_circle : Icons.pending, color: debt.isPaid ? AppColors.income : AppColors.gold),
+                    PopupMenuButton<String>(
+                      icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _showDebtDialog(context, debt: debt);
+                        } else if (value == 'delete') {
+                          context.read<DebtProvider>().deleteDebt(debt.id);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                        const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: AppColors.expense))),
+                      ],
+                    ),
+                  ],
+                ),
               ],
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 5),
             Row(
               children: [
                 Text(
-                  'GH₵ ${debt.paidAmount}',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.white),
+                  'GH₵ ${debt.paidAmount.toStringAsFixed(2)}',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
                 ),
-                Text(' / GH₵ ${debt.amount}', style: const TextStyle(color: AppColors.grey)),
+                Text(' / GH₵ ${debt.amount.toStringAsFixed(2)}', style: TextStyle(color: colorScheme.onSurfaceVariant)),
               ],
             ),
             const SizedBox(height: 15),
             LinearProgressIndicator(
               value: debt.progress,
-              backgroundColor: AppColors.darkNavy,
+              backgroundColor: colorScheme.surface,
               valueColor: AlwaysStoppedAnimation<Color>(debt.isPaid ? AppColors.income : AppColors.gold),
               minHeight: 8,
               borderRadius: BorderRadius.circular(4),
@@ -191,10 +225,10 @@ class DebtScreen extends StatelessWidget {
               children: [
                 Text(
                   'Due: ${DateFormat('MMM dd').format(debt.dueDate)}',
-                  style: const TextStyle(color: AppColors.grey, fontSize: 12),
+                  style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
                 ),
                 TextButton(
-                  onPressed: () {
+                  onPressed: debt.isPaid ? null : () {
                     final updated = DebtModel(
                       id: debt.id,
                       title: debt.title,
@@ -205,7 +239,7 @@ class DebtScreen extends StatelessWidget {
                     );
                     context.read<DebtProvider>().updateDebt(updated);
                   },
-                  child: Text(debt.isPaid ? 'Paid' : 'Mark as Paid', style: TextStyle(color: debt.isPaid ? AppColors.grey : AppColors.gold)),
+                  child: Text(debt.isPaid ? 'Paid' : 'Mark as Paid', style: TextStyle(color: debt.isPaid ? colorScheme.onSurfaceVariant : AppColors.gold)),
                 ),
               ],
             ),

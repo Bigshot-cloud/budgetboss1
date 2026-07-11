@@ -23,19 +23,22 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return TextFormField(
       controller: controller,
       obscureText: isPassword,
       keyboardType: keyboardType,
       validator: validator,
       enabled: enabled,
-      style: TextStyle(color: enabled ? AppColors.white : AppColors.grey),
+      style: TextStyle(color: enabled ? colorScheme.onSurface : colorScheme.onSurfaceVariant),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(color: AppColors.grey),
+        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
         prefixIcon: Icon(prefixIcon, color: AppColors.gold.withValues(alpha: enabled ? 1.0 : 0.5), size: 20),
         filled: true,
-        fillColor: AppColors.navy.withValues(alpha: enabled ? 1.0 : 0.6),
+        fillColor: colorScheme.surfaceContainer,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,

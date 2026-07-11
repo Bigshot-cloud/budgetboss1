@@ -113,13 +113,18 @@ class BudgetBossApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: theme.themeMode,
-            home: StreamBuilder<auth.User?>(
-              stream: auth.FirebaseAuth.instance.authStateChanges(),
-              builder: (context, snapshot) {
+            home: FutureBuilder(
+              future: Future.wait([
+                auth.FirebaseAuth.instance.authStateChanges().first,
+                Future.delayed(const Duration(seconds: 4)),
+              ]),
+              builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const SplashScreen();
                 }
-                if (snapshot.hasData) {
+                
+                final user = snapshot.data?[0] as auth.User?;
+                if (user != null) {
                   return const MainScreen();
                 }
                 return const LoginScreen();

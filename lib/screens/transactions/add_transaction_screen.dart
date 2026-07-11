@@ -72,6 +72,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Transaction'),
@@ -90,26 +93,26 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: AppColors.navy,
+                color: colorScheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
                   Expanded(
-                    child: _buildToggleButton('Income', TransactionType.income),
+                    child: _buildToggleButton('Income', TransactionType.income, colorScheme),
                   ),
                   Expanded(
-                    child: _buildToggleButton('Expense', TransactionType.expense),
+                    child: _buildToggleButton('Expense', TransactionType.expense, colorScheme),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 30),
-            const Text('Category', style: TextStyle(color: AppColors.grey)),
+            Text('Category', style: TextStyle(color: colorScheme.onSurfaceVariant)),
             const SizedBox(height: 10),
-            _buildCategoryDropdown(),
+            _buildCategoryDropdown(colorScheme),
             const SizedBox(height: 25),
-            const Text('Amount', style: TextStyle(color: AppColors.grey)),
+            Text('Amount', style: TextStyle(color: colorScheme.onSurfaceVariant)),
             const SizedBox(height: 10),
             CustomTextField(
               controller: _amountController,
@@ -118,11 +121,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 25),
-            const Text('Date', style: TextStyle(color: AppColors.grey)),
+            Text('Date', style: TextStyle(color: colorScheme.onSurfaceVariant)),
             const SizedBox(height: 10),
-            _buildDatePicker(),
+            _buildDatePicker(colorScheme),
             const SizedBox(height: 25),
-            const Text('Note (Optional)', style: TextStyle(color: AppColors.grey)),
+            Text('Note (Optional)', style: TextStyle(color: colorScheme.onSurfaceVariant)),
             const SizedBox(height: 10),
             CustomTextField(
               controller: _noteController,
@@ -132,10 +135,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             const SizedBox(height: 40),
             ElevatedButton(
               onPressed: _saveTransaction,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.blueAccent,
-                foregroundColor: AppColors.white,
-              ),
               child: const Text('Save Transaction'),
             ),
           ],
@@ -144,7 +143,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  Widget _buildToggleButton(String label, TransactionType type) {
+  Widget _buildToggleButton(String label, TransactionType type, ColorScheme colorScheme) {
     final isSelected = _selectedType == type;
     return GestureDetector(
       onTap: () {
@@ -163,7 +162,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           child: Text(
             label,
             style: TextStyle(
-              color: isSelected ? AppColors.white : AppColors.grey,
+              color: isSelected ? Colors.white : colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -172,47 +171,49 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  Widget _buildCategoryDropdown() {
+  Widget _buildCategoryDropdown(ColorScheme colorScheme) {
     final categories = _selectedType == TransactionType.income ? _incomeCategories : _expenseCategories;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: AppColors.navy,
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(12),
       ),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _selectedCategory,
-          isExpanded: true,
-          dropdownColor: AppColors.navy,
-          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.grey),
-          items: categories.map((String category) {
-            return DropdownMenuItem<String>(
-              value: category,
-              child: Row(
-                children: [
-                  Icon(_getIconForCategory(category), color: AppColors.gold, size: 20),
-                  const SizedBox(width: 15),
-                  Text(category, style: const TextStyle(color: AppColors.white)),
-                ],
-              ),
-            );
-          }).toList(),
-          onChanged: (String? newValue) {
-            if (newValue != null) setState(() => _selectedCategory = newValue);
-          },
+        child: Theme(
+          data: Theme.of(context).copyWith(canvasColor: colorScheme.surfaceContainer),
+          child: DropdownButton<String>(
+            value: _selectedCategory,
+            isExpanded: true,
+            icon: Icon(Icons.keyboard_arrow_down, color: colorScheme.onSurfaceVariant),
+            items: categories.map((String category) {
+              return DropdownMenuItem<String>(
+                value: category,
+                child: Row(
+                  children: [
+                    Icon(_getIconForCategory(category), color: AppColors.gold, size: 20),
+                    const SizedBox(width: 15),
+                    Text(category, style: TextStyle(color: colorScheme.onSurface)),
+                  ],
+                ),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              if (newValue != null) setState(() => _selectedCategory = newValue);
+            },
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildDatePicker() {
+  Widget _buildDatePicker(ColorScheme colorScheme) {
     return GestureDetector(
       onTap: () => _selectDate(context),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.navy,
+          color: colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -220,9 +221,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           children: [
             Text(
               DateFormat('MMM dd, yyyy').format(_selectedDate),
-              style: const TextStyle(color: AppColors.white),
+              style: TextStyle(color: colorScheme.onSurface),
             ),
-            const Icon(Icons.calendar_month, color: AppColors.grey, size: 20),
+            Icon(Icons.calendar_month, color: colorScheme.onSurfaceVariant, size: 20),
           ],
         ),
       ),

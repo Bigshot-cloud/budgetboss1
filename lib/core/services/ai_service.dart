@@ -37,7 +37,7 @@ class AiService {
       }
     }
 
-    // 🤖 3. FULL AI FALLBACK (GEMINI BRAIN)
+    // 🤖 3. FULL AI FALLBACK (OPENAI BRAIN)
     try {
       final response = await _openAI.analyzeFinance(
           """
@@ -53,7 +53,8 @@ Rules:
 - Be short, helpful and professional.
 - Focus on saving money, budgeting, and debt control.
 - If asking about specific app features, mention sections like 'Debt Tracker' or 'Savings Goals'.
-"""
+""",
+          isChat: true,
       );
       return response;
     } catch (e) {

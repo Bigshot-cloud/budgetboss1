@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../core/constants/app_colors.dart';
 
 class BannerItem {
   final String title;
@@ -39,7 +40,7 @@ class _BudgetBannerWidgetState extends State<BudgetBannerWidget> {
     BannerItem(
       title: "Invest in Future 🚀",
       subtitle: "See your wealth grow with our AI insights",
-      imageUrl: "https://images.unsplash.com/photo-1611974714851-eb605161882c?q=80&w=800&auto=format&fit=crop",
+      imageUrl: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?q=80&w=800&auto=format&fit=crop",
     ),
   ];
 
@@ -106,8 +107,8 @@ class _BudgetBannerWidgetState extends State<BudgetBannerWidget> {
               width: _currentPage == index ? 20 : 6,
               decoration: BoxDecoration(
                 color: _currentPage == index 
-                    ? Theme.of(context).primaryColor 
-                    : Colors.grey.withValues(alpha: 0.3),
+                    ? AppColors.gold 
+                    : AppColors.grey.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -122,6 +123,7 @@ class _BudgetBannerWidgetState extends State<BudgetBannerWidget> {
       margin: const EdgeInsets.symmetric(horizontal: 2),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
+        color: AppColors.navy, // Fallback background color
         image: DecorationImage(
           image: NetworkImage(item.imageUrl),
           fit: BoxFit.cover,

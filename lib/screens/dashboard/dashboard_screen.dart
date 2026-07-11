@@ -12,6 +12,7 @@ import 'package:budgetboss_app/screens/notifications/notifications_screen.dart';
 import 'package:budgetboss_app/screens/transactions/transactions_screen.dart';
 import 'package:budgetboss_app/screens/debt/debt_screen.dart';
 import 'package:budgetboss_app/screens/savings/savings_screen.dart';
+import 'package:budgetboss_app/core/services/sms_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -23,9 +24,32 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isOverview = true;
   String _timeFilter = 'This Month';
+  final SmsService _smsService = SmsService();
+
+  @override
+  void initState() {
+    super.initState();
+    _startSmsListener();
+  }
+
+  void _startSmsListener() {
+    _smsService.startListening((transaction) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('New transaction detected: ${transaction['title']}'),
+            backgroundColor: AppColors.income,
+          ),
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         leading: Builder(
@@ -69,24 +93,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       drawer: Drawer(
-        backgroundColor: AppColors.navy,
+        backgroundColor: colorScheme.surface,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: AppColors.darkNavy),
+            DrawerHeader(
+              decoration: BoxDecoration(color: colorScheme.surfaceContainer),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.account_balance_wallet, size: 50, color: AppColors.gold),
-                  SizedBox(height: 10),
-                  Text('BudgetBoss Menu', style: TextStyle(color: AppColors.white, fontSize: 20)),
+                  const Icon(Icons.account_balance_wallet, size: 50, color: AppColors.gold),
+                  const SizedBox(height: 10),
+                  Text('BudgetBoss Menu', style: TextStyle(color: colorScheme.onSurface, fontSize: 20)),
                 ],
               ),
             ),
             ListTile(
               leading: const Icon(Icons.money_off, color: AppColors.expense),
-              title: const Text('Debt Tracker', style: TextStyle(color: AppColors.white)),
+              title: Text('Debt Tracker', style: TextStyle(color: colorScheme.onSurface)),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const DebtScreen()));
@@ -94,7 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.savings_outlined, color: AppColors.income),
-              title: const Text('Savings Goals', style: TextStyle(color: AppColors.white)),
+              title: Text('Savings Goals', style: TextStyle(color: colorScheme.onSurface)),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const SavingsScreen()));
@@ -169,6 +193,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     }
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return ListView(
       key: const ValueKey('Overview'),
       padding: const EdgeInsets.all(20.0),
@@ -182,9 +208,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Recent Transactions',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.white),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
             ),
             TextButton(
               onPressed: () {
@@ -202,15 +228,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildBalanceCard(double balance) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.navy,
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -222,30 +249,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Total Balance',
-                style: TextStyle(color: AppColors.grey, fontSize: 16),
+                style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 16),
               ),
-              _buildTimeFilterWidget(),
+              Flexible(child: _buildTimeFilterWidget()),
             ],
           ),
           const SizedBox(height: 10),
           Text(
             'GH₵ ${balance.toStringAsFixed(2)}',
-            style: const TextStyle(
-              color: AppColors.white,
+            style: TextStyle(
+              color: colorScheme.onSurface,
               fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 10),
-          const Row(
+          Row(
             children: [
-              Icon(Icons.trending_up, color: AppColors.income, size: 16),
-              SizedBox(width: 5),
+              const Icon(Icons.trending_up, color: AppColors.income, size: 16),
+              const SizedBox(width: 5),
               Text(
                 'Live Data Tracking',
-                style: TextStyle(color: AppColors.grey, fontSize: 12),
+                style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
               ),
             ],
           ),
@@ -290,6 +317,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTimeFilterWidget() {
+    final colorScheme = Theme.of(context).colorScheme;
     return PopupMenuButton<String>(
       onSelected: (String result) {
         setState(() {
@@ -300,18 +328,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const PopupMenuItem<String>(value: 'Today', child: Text('Today')),
         const PopupMenuItem<String>(value: 'This Week', child: Text('This Week')),
         const PopupMenuItem<String>(value: 'This Month', child: Text('This Month')),
-        const PopupMenuItem<String>(value: 'Custom', child: Text('Custom Range')),
+        const PopupMenuItem<String>(value: 'All Time', child: Text('All Time')),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: AppColors.darkNavy,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_timeFilter, style: const TextStyle(fontSize: 12, color: AppColors.white)),
-            const Icon(Icons.keyboard_arrow_down, size: 16, color: AppColors.white),
+            Flexible(
+              child: Text(
+                _timeFilter, 
+                style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Icon(Icons.keyboard_arrow_down, size: 16, color: colorScheme.onSurface),
           ],
         ),
       ),
@@ -331,10 +367,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSummaryItem(String label, String amount, IconData icon, Color color) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: AppColors.navy,
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -344,7 +381,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Icon(icon, color: color, size: 14),
               const SizedBox(width: 5),
-              Text(label, style: const TextStyle(color: AppColors.grey, fontSize: 12)),
+              Flexible(
+                child: Text(
+                  label, 
+                  style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -359,8 +402,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildRecentTransactions(List<TransactionModel> transactions) {
+    final colorScheme = Theme.of(context).colorScheme;
     if (transactions.isEmpty) {
-      return const Center(child: Text('No transactions yet', style: TextStyle(color: AppColors.grey)));
+      return Center(child: Text('No transactions yet', style: TextStyle(color: colorScheme.onSurfaceVariant)));
     }
 
     return Column(
@@ -370,7 +414,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.navy,
+            color: colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -378,7 +422,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.darkNavy,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(tx.icon, color: isIncome ? AppColors.income : AppColors.expense),
@@ -388,8 +432,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(tx.title, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.white)),
-                    Text(tx.category, style: const TextStyle(color: AppColors.grey, fontSize: 12)),
+                    Text(tx.title, style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+                    Text(tx.category, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
                   ],
                 ),
               ),
@@ -405,7 +449,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   Text(
                     '${tx.date.day}/${tx.date.month}',
-                    style: const TextStyle(color: AppColors.grey, fontSize: 10),
+                    style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 10),
                   ),
                 ],
               ),

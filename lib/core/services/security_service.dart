@@ -2,7 +2,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 
 class SecurityService {
-  final _storage = const FlutterSecureStorage();
+  final _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
   final _localAuth = LocalAuthentication();
 
   Future<void> setPin(String pin) async {
@@ -10,7 +12,13 @@ class SecurityService {
   }
 
   Future<String?> getPin() async {
-    return await _storage.read(key: 'user_pin');
+    try {
+      return await _storage.read(key: 'user_pin');
+    } catch (e) {
+      // If decryption fails (common on Android after reinstall/re-sign), clear and return null
+      await _storage.deleteAll();
+      return null;
+    }
   }
 
   Future<bool> verifyPin(String pin) async {

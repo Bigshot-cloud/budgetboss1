@@ -27,20 +27,29 @@ subprojects {
                     setNamespace.invoke(android, "com.shounakmulay.telephony")
                 } catch (e: Exception) {}
             }
-            
-            // Force JVM 17 for all tasks to fix inconsistency
-            project.tasks.withType<JavaCompile>().configureEach {
-                sourceCompatibility = "17"
-                targetCompatibility = "17"
-            }
         }
     }
 }
 
-subprojects {
+// Force JVM 17 for all subprojects, BUT for telephony we might need to match its internal 1.8 if it persists
+allprojects {
+    tasks.withType<JavaCompile>().configureEach {
+        if (project.name == "telephony") {
+            sourceCompatibility = "1.8"
+            targetCompatibility = "1.8"
+        } else {
+            sourceCompatibility = "17"
+            targetCompatibility = "17"
+        }
+    }
+    
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
         compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            if (project.name == "telephony") {
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+            } else {
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            }
         }
     }
 }

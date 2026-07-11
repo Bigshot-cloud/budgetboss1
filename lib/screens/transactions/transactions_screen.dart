@@ -45,13 +45,14 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   Widget build(BuildContext context) {
     final txProvider = context.watch<TransactionProvider>();
     final filteredTx = _getFilteredTransactions(txProvider.transactions);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transaction History'),
         actions: [
           PopupMenuButton<String>(
-            icon: const Icon(Icons.filter_list),
+            icon: Icon(Icons.filter_list, color: colorScheme.onSurface),
             onSelected: (val) => setState(() => _selectedFilter = val),
             itemBuilder: (context) => ['All', 'Today', 'This Week', 'This Month']
                 .map((f) => PopupMenuItem(value: f, child: Text(f)))
@@ -60,7 +61,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         ],
       ),
       body: filteredTx.isEmpty
-          ? const Center(child: Text('No transactions found', style: TextStyle(color: AppColors.grey)))
+          ? Center(child: Text('No transactions found', style: TextStyle(color: colorScheme.onSurfaceVariant)))
           : ListView.separated(
               padding: const EdgeInsets.all(20),
               itemCount: filteredTx.length,
@@ -79,12 +80,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       color: AppColors.expense,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(Icons.delete, color: AppColors.white),
+                    child: const Icon(Icons.delete, color: Colors.white),
                   ),
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.navy,
+                      color: colorScheme.surfaceContainer,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
@@ -92,7 +93,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.darkNavy,
+                            color: colorScheme.surface,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(tx.icon, color: isIncome ? AppColors.income : AppColors.expense),
@@ -102,8 +103,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(tx.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                              Text(tx.category, style: const TextStyle(color: AppColors.grey, fontSize: 12)),
+                              Text(
+                                tx.title, 
+                                style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(tx.category, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
                             ],
                           ),
                         ),
@@ -119,7 +124,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                             ),
                             Text(
                               DateFormat('MMM dd, yyyy').format(tx.date),
-                              style: const TextStyle(color: AppColors.grey, fontSize: 10),
+                              style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 10),
                             ),
                           ],
                         ),

@@ -62,7 +62,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Registration successful! Please login.')),
           );
-          // Phase 10: After signup -> go to Login screen
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -82,6 +81,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(backgroundColor: Colors.transparent),
       body: SafeArea(
@@ -103,7 +104,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Center(
                   child: Text(
                     'Create Account',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: colorScheme.onSurface),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -129,24 +130,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 16),
-                // Country Selection
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: AppColors.navy,
+                    color: colorScheme.surfaceContainer,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: _selectedCountry,
-                      hint: const Text('Select Country', style: TextStyle(color: AppColors.grey)),
+                      hint: Text('Select Country', style: TextStyle(color: colorScheme.onSurfaceVariant)),
                       isExpanded: true,
-                      dropdownColor: AppColors.navy,
-                      icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.grey),
+                      dropdownColor: colorScheme.surfaceContainer,
+                      icon: Icon(Icons.keyboard_arrow_down, color: colorScheme.onSurfaceVariant),
                       items: _countries.map((String country) {
                         return DropdownMenuItem<String>(
                           value: country,
-                          child: Text(country, style: const TextStyle(color: AppColors.white)),
+                          child: Text(country, style: TextStyle(color: colorScheme.onSurface)),
                         );
                       }).toList(),
                       onChanged: (String? newValue) {
@@ -177,7 +177,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: ElevatedButton(
                     onPressed: authProvider.isLoading ? null : _register,
                     child: authProvider.isLoading
-                        ? const CircularProgressIndicator(color: AppColors.navy)
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
                         : const Text('Register'),
                   ),
                 ),
@@ -185,7 +189,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Already have an account? ", style: TextStyle(color: AppColors.white)),
+                    Text("Already have an account? ", style: TextStyle(color: colorScheme.onSurface)),
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: const Text(

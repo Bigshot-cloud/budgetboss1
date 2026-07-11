@@ -21,10 +21,15 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   @override
   void initState() {
     super.initState();
-    final user = context.read<AuthProvider>().user;
-    _messages.add({
-      'role': 'ai',
-      'text': "Hi ${user?.fullName.split(' ')[0] ?? 'there'}! 👋\n\nI'm here to help you build better financial habits. What would you like to do?"
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final user = context.read<AuthProvider>().user;
+      setState(() {
+        _messages.add({
+          'role': 'ai',
+          'text': "Hi ${user?.fullName.split(' ')[0] ?? 'there'}! 👋\n\nI'm here to help you build better financial habits. What would you like to do?"
+        });
+      });
     });
   }
 
@@ -40,29 +45,40 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       _isTyping = true;
     });
 
-    // Phase 8: Pass contextual data to AI
     final response = await _aiService.getResponse(
       messageText,
       totalBalance: txProvider.totalBalance,
       totalSpent: txProvider.totalExpense,
     );
 
-    setState(() {
-      _messages.add({'role': 'ai', 'text': response});
-      _isTyping = false;
-    });
+    if (mounted) {
+      setState(() {
+        _messages.add({'role': 'ai', 'text': response});
+        _isTyping = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.auto_awesome, color: AppColors.gold, size: 20),
-            SizedBox(width: 10),
-            Text('BudgetBoss Assistant'),
+            const Icon(Icons.auto_awesome, color: AppColors.gold, size: 20),
+            const SizedBox(width: 10),
+            Text(
+              'BudgetBoss Assistant', 
+              style: TextStyle(
+                color: isDark ? Colors.white : AppColors.navy,
+                fontWeight: FontWeight.bold
+              )
+            ),
           ],
         ),
       ),
@@ -80,21 +96,27 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             ),
           ),
           if (_isTyping)
-            const Padding(
-              padding: EdgeInsets.only(left: 20, bottom: 10),
+            Padding(
+              padding: const EdgeInsets.only(left: 20, bottom: 10),
               child: Row(
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 12,
                     height: 12,
                     child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold),
                   ),
-                  SizedBox(width: 10),
-                  Text('AI is thinking...', style: TextStyle(color: AppColors.grey, fontSize: 12)),
+                  const SizedBox(width: 10),
+                  Text(
+                    'AI is thinking...', 
+                    style: TextStyle(
+                      color: isDark ? AppColors.grey : Colors.grey[700], 
+                      fontSize: 12
+                    )
+                  ),
                 ],
               ),
             ),
-          if (_messages.length == 1) ...[
+          if (_messages.length <= 1 && !_isTyping) ...[
             _buildQuickAction(Icons.person_search_outlined, 'How can I save more?'),
             _buildQuickAction(Icons.calendar_today_outlined, 'Create a budget plan'),
             const SizedBox(height: 10),
@@ -106,6 +128,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   Widget _buildChatBubble(String text, bool isAi) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Align(
       alignment: isAi ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
@@ -113,19 +137,32 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         padding: const EdgeInsets.all(16),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
-          color: isAi ? AppColors.navy : AppColors.blueAccent,
+          color: isAi 
+              ? (isDark ? AppColors.navy : Colors.grey[200]) 
+              : AppColors.blueAccent,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),
             bottomLeft: isAi ? Radius.zero : const Radius.circular(20),
             bottomRight: isAi ? const Radius.circular(20) : Radius.zero,
           ),
+          boxShadow: [
+            if (!isDark)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+          ],
         ),
         child: Text(
           text,
           style: TextStyle(
-            color: isAi ? AppColors.white : Colors.white,
+            color: isAi 
+                ? (isDark ? Colors.white : Colors.black87) 
+                : Colors.white,
             height: 1.4,
+            fontSize: 15,
           ),
         ),
       ),
@@ -133,6 +170,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   Widget _buildQuickAction(IconData icon, String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
       child: GestureDetector(
@@ -140,15 +179,32 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.darkNavy,
+            color: isDark ? AppColors.darkNavy : Colors.white,
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: AppColors.navy),
+            border: Border.all(
+              color: isDark ? AppColors.navy : Colors.grey[300]!,
+            ),
+            boxShadow: [
+              if (!isDark)
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                ),
+            ],
           ),
           child: Row(
             children: [
-              Icon(icon, color: AppColors.grey, size: 18),
+              const Icon(Icons.auto_awesome, color: AppColors.gold, size: 16),
               const SizedBox(width: 15),
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+              Text(
+                label, 
+                style: TextStyle(
+                  fontWeight: FontWeight.w500, 
+                  fontSize: 14, 
+                  color: isDark ? Colors.white : Colors.black87
+                )
+              ),
             ],
           ),
         ),
@@ -157,23 +213,34 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   Widget _buildChatInput() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(20),
-      color: AppColors.darkNavy,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkNavy : Colors.white,
+        border: Border(
+          top: BorderSide(color: isDark ? AppColors.navy : Colors.grey[200]!)
+        ),
+      ),
       child: Row(
         children: [
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
-                color: AppColors.navy,
+                color: isDark ? AppColors.navy : Colors.grey[100],
                 borderRadius: BorderRadius.circular(30),
               ),
               child: TextField(
                 controller: _controller,
                 onSubmitted: (_) => _sendMessage(),
-                decoration: const InputDecoration(
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                decoration: InputDecoration(
                   hintText: 'Ask me anything...',
+                  hintStyle: TextStyle(
+                    color: isDark ? AppColors.grey : Colors.grey[600],
+                  ),
                   border: InputBorder.none,
                 ),
               ),
@@ -188,7 +255,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                 color: AppColors.blueAccent,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.send, color: AppColors.white, size: 20),
+              child: const Icon(Icons.send, color: Colors.white, size: 20),
             ),
           ),
         ],

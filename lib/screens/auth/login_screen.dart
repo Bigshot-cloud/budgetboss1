@@ -53,6 +53,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -74,14 +76,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 Center(
                   child: Text(
                     'Welcome Back!',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: colorScheme.onSurface),
                   ),
                 ),
                 const SizedBox(height: 10),
                 Center(
                   child: Text(
                     'Login to manage your finances',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.grey),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -118,9 +120,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             setState(() => _rememberMe = value!);
                           },
                           activeColor: AppColors.gold,
-                          checkColor: AppColors.navy,
+                          checkColor: colorScheme.surface,
                         ),
-                        const Text('Remember Me', style: TextStyle(color: AppColors.white)),
+                        Text('Remember Me', style: TextStyle(color: colorScheme.onSurface)),
                       ],
                     ),
                     TextButton(
@@ -135,7 +137,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: authProvider.isLoading ? null : _login,
                     child: authProvider.isLoading
-                        ? const CircularProgressIndicator(color: AppColors.navy)
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
                         : const Text('Login'),
                   ),
                 ),
@@ -143,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Don't have an account? ", style: TextStyle(color: AppColors.white)),
+                    Text("Don't have an account? ", style: TextStyle(color: colorScheme.onSurface)),
                     GestureDetector(
                       onTap: () {
                         Navigator.push(

@@ -17,43 +17,26 @@ class AppTheme {
         onPrimary: AppColors.navy,
         onSecondary: AppColors.white,
         onSurface: AppColors.white,
+        surfaceContainer: AppColors.darkNavy, // Explicit for older Flutter support
+        onSurfaceVariant: AppColors.grey,
       ),
       textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
-        headlineLarge: GoogleFonts.inter(
-          color: AppColors.white,
-          fontWeight: FontWeight.bold,
-        ),
-        headlineMedium: GoogleFonts.inter(
-          color: AppColors.white,
-          fontWeight: FontWeight.bold,
-        ),
-        titleLarge: GoogleFonts.inter(
-          color: AppColors.white,
-          fontWeight: FontWeight.w600,
-        ),
-        bodyLarge: GoogleFonts.inter(
-          color: AppColors.white,
-        ),
-        bodyMedium: GoogleFonts.inter(
-          color: AppColors.offWhite,
-        ),
+        headlineLarge: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.bold),
+        headlineMedium: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.bold),
+        titleLarge: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w600),
+        bodyLarge: GoogleFonts.inter(color: AppColors.white),
+        bodyMedium: GoogleFonts.inter(color: AppColors.offWhite),
       ),
       cardTheme: CardThemeData(
         color: AppColors.navy,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.darkNavy,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: TextStyle(
-          color: AppColors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
+        titleTextStyle: TextStyle(color: AppColors.white, fontSize: 20, fontWeight: FontWeight.bold),
         iconTheme: IconThemeData(color: AppColors.white),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -68,20 +51,7 @@ class AppTheme {
         backgroundColor: AppColors.gold,
         foregroundColor: AppColors.navy,
       ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.gold,
-          foregroundColor: AppColors.navy,
-          minimumSize: const Size(double.infinity, 56),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-      ),
+      elevatedButtonTheme: _buttonTheme(isDark: true),
     );
   }
 
@@ -91,53 +61,54 @@ class AppTheme {
       brightness: Brightness.light,
       primaryColor: AppColors.gold,
       scaffoldBackgroundColor: AppColors.offWhite,
-      colorScheme: const ColorScheme.light(
+      colorScheme: ColorScheme.light(
         primary: AppColors.gold,
         secondary: AppColors.blueAccent,
-        surface: AppColors.white,
+        surface: Colors.white,
         error: AppColors.expense,
-        onPrimary: AppColors.white,
-        onSecondary: AppColors.white,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
         onSurface: AppColors.navy,
+        surfaceContainer: Colors.grey[100]!, // Explicit
+        onSurfaceVariant: Colors.grey[700]!,
       ),
       textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme).copyWith(
-        headlineLarge: GoogleFonts.inter(
-          color: AppColors.navy,
-          fontWeight: FontWeight.bold,
-        ),
-        headlineMedium: GoogleFonts.inter(
-          color: AppColors.navy,
-          fontWeight: FontWeight.bold,
-        ),
-        titleLarge: GoogleFonts.inter(
-          color: AppColors.navy,
-          fontWeight: FontWeight.w600,
-        ),
+        headlineLarge: GoogleFonts.inter(color: AppColors.navy, fontWeight: FontWeight.bold),
+        headlineMedium: GoogleFonts.inter(color: AppColors.navy, fontWeight: FontWeight.bold),
+        titleLarge: GoogleFonts.inter(color: AppColors.navy, fontWeight: FontWeight.w600),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.white,
+        color: Colors.white,
         elevation: 2,
         shadowColor: Colors.black12,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.offWhite,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: TextStyle(
-          color: AppColors.navy,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
+        titleTextStyle: TextStyle(color: AppColors.navy, fontSize: 20, fontWeight: FontWeight.bold),
         iconTheme: IconThemeData(color: AppColors.navy),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.white,
+        backgroundColor: Colors.white,
         selectedItemColor: AppColors.gold,
         unselectedItemColor: AppColors.grey,
         type: BottomNavigationBarType.fixed,
+      ),
+      elevatedButtonTheme: _buttonTheme(isDark: false),
+    );
+  }
+
+  static ElevatedButtonThemeData _buttonTheme({required bool isDark}) {
+    return ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.gold,
+        foregroundColor: isDark ? AppColors.navy : Colors.white,
+        minimumSize: const Size(double.infinity, 56),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        elevation: isDark ? 0 : 2,
+        textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
       ),
     );
   }

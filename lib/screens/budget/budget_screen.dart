@@ -3,61 +3,114 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/transaction_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../models/user_model.dart';
 
 class BudgetScreen extends StatelessWidget {
   const BudgetScreen({super.key});
 
+  void _showEditBudgetDialog(BuildContext context, UserModel user) {
+    final controller = TextEditingController(text: user.monthlyBudget.toString());
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+        title: Text('Edit Monthly Budget', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          decoration: const InputDecoration(
+            hintText: 'Enter amount',
+            hintStyle: TextStyle(color: AppColors.grey),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.gold)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final newBudget = double.tryParse(controller.text) ?? user.monthlyBudget;
+              await context.read<AuthProvider>().updateUser(user.copyWith(monthlyBudget: newBudget));
+              if (context.mounted) Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(minimumSize: const Size(80, 40)),
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final txProvider = context.watch<TransactionProvider>();
-    final totalSpent = txProvider.totalExpense;
-    // Hardcoded budget limit for now, ideally this would come from a user preference/database
-    const double budgetLimit = 8000.0; 
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.user;
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    final totalSpent = txProvider.monthlyExpense;
+    final double budgetLimit = user?.monthlyBudget ?? 8000.0; 
     final double remaining = budgetLimit - totalSpent;
-    final double percentUsed = (totalSpent / budgetLimit * 100).clamp(0, 100);
+    final double percentUsed = budgetLimit > 0 ? (totalSpent / budgetLimit * 100).clamp(0, 100) : 0;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Budget Overview'),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.calendar_today_outlined, size: 20)),
+          IconButton(
+            onPressed: () async {
+              await showDatePicker(
+                context: context,
+                initialDate: DateTime.now(),
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+              );
+            }, 
+            icon: const Icon(Icons.calendar_today_outlined, size: 20)
+          ),
         ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _buildMonthSelector(),
+            GestureDetector(
+              onTap: () => user != null ? _showEditBudgetDialog(context, user) : null,
+              child: _buildMonthSelector(context),
+            ),
             const SizedBox(height: 30),
-            _buildCircularProgress(percentUsed),
+            _buildCircularProgress(context, percentUsed),
             const SizedBox(height: 40),
-            _buildBudgetSummary(budgetLimit, totalSpent, remaining),
+            _buildBudgetSummary(context, budgetLimit, totalSpent, remaining),
             const SizedBox(height: 30),
-            _buildEncouragementCard(percentUsed),
+            _buildEncouragementCard(context, percentUsed),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMonthSelector() {
+  Widget _buildMonthSelector(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.navy,
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('This Month', style: TextStyle(color: AppColors.white)),
-          Icon(Icons.keyboard_arrow_down, color: AppColors.white),
+          Text('This Month', style: TextStyle(color: colorScheme.onSurface)),
+          Icon(Icons.keyboard_arrow_down, color: colorScheme.onSurface),
         ],
       ),
     );
   }
 
-  Widget _buildCircularProgress(double percent) {
+  Widget _buildCircularProgress(BuildContext context, double percent) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
       height: 200,
       child: Stack(
@@ -76,7 +129,7 @@ class BudgetScreen extends StatelessWidget {
                   radius: 20,
                 ),
                 PieChartSectionData(
-                  color: AppColors.navy,
+                  color: colorScheme.surfaceContainer,
                   value: 100 - percent,
                   showTitle: false,
                   radius: 20,
@@ -89,17 +142,17 @@ class BudgetScreen extends StatelessWidget {
             children: [
               Text(
                 '${percent.toStringAsFixed(0)}%',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.white,
+                  color: colorScheme.onSurface,
                 ),
               ),
-              const Text(
+              Text(
                 'of budget used',
                 style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.grey,
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -109,29 +162,31 @@ class BudgetScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBudgetSummary(double limit, double spent, double remaining) {
+  Widget _buildBudgetSummary(BuildContext context, double limit, double spent, double remaining) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Budget Summary',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.white),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
         ),
         const SizedBox(height: 20),
-        _buildSummaryRow('Budget Limit', 'GH₵ ${limit.toStringAsFixed(0)}', AppColors.white),
+        _buildSummaryRow(context, 'Budget Limit', 'GH₵ ${limit.toStringAsFixed(0)}', colorScheme.onSurface),
         const SizedBox(height: 15),
-        _buildSummaryRow('Total Spent', 'GH₵ ${spent.toStringAsFixed(0)}', AppColors.expense),
+        _buildSummaryRow(context, 'Total Spent', 'GH₵ ${spent.toStringAsFixed(0)}', AppColors.expense),
         const SizedBox(height: 15),
-        _buildSummaryRow('Remaining', 'GH₵ ${remaining.toStringAsFixed(0)}', remaining < 0 ? AppColors.expense : AppColors.income),
+        _buildSummaryRow(context, 'Remaining', 'GH₵ ${remaining.toStringAsFixed(0)}', remaining < 0 ? AppColors.expense : AppColors.income),
       ],
     );
   }
 
-  Widget _buildSummaryRow(String label, String amount, Color amountColor) {
+  Widget _buildSummaryRow(BuildContext context, String label, String amount, Color amountColor) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: AppColors.grey)),
+        Text(label, style: TextStyle(color: colorScheme.onSurfaceVariant)),
         Text(
           amount,
           style: TextStyle(
@@ -144,7 +199,8 @@ class BudgetScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEncouragementCard(double percent) {
+  Widget _buildEncouragementCard(BuildContext context, double percent) {
+    final colorScheme = Theme.of(context).colorScheme;
     String title = "You're doing great! 🚀";
     String subtitle = "You're within your budget.";
     IconData icon = Icons.star;
@@ -165,15 +221,15 @@ class BudgetScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.navy,
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: AppColors.darkNavy,
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: iconColor),
@@ -185,11 +241,11 @@ class BudgetScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.white),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface),
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(color: AppColors.grey, fontSize: 12),
+                  style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
                 ),
               ],
             ),

@@ -25,11 +25,18 @@ class TransactionModel {
   factory TransactionModel.fromMap(Map<String, dynamic> map, String id) {
     final category = (map['category'] ?? '').toString();
 
+    DateTime parsedDate;
+    if (map['date'] is Timestamp) {
+      parsedDate = (map['date'] as Timestamp).toDate();
+    } else {
+      parsedDate = DateTime.now();
+    }
+
     return TransactionModel(
       id: id,
       title: (map['title'] ?? '').toString(),
       amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
-      date: (map['date'] as Timestamp).toDate(),
+      date: parsedDate,
       category: category,
       type: TransactionType.values.firstWhere(
             (e) => e.toString() == map['type'],

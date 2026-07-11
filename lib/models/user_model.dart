@@ -5,6 +5,7 @@ class UserModel {
   final String? phoneNumber;
   final String? country;
   final String? profilePictureUrl;
+  final double monthlyBudget;
   final Map<String, dynamic> preferences;
   final Map<String, dynamic> securitySettings;
 
@@ -15,6 +16,7 @@ class UserModel {
     this.phoneNumber,
     this.country,
     this.profilePictureUrl,
+    this.monthlyBudget = 8000.0,
     Map<String, dynamic>? preferences,
     Map<String, dynamic>? securitySettings,
   })  : preferences = preferences ?? {
@@ -37,6 +39,7 @@ class UserModel {
       phoneNumber: map['phoneNumber'],
       country: map['country'],
       profilePictureUrl: map['profilePictureUrl'],
+      monthlyBudget: (map['monthlyBudget'] as num?)?.toDouble() ?? 8000.0,
       preferences: map['preferences'] != null ? Map<String, dynamic>.from(map['preferences']) : null,
       securitySettings: map['securitySettings'] != null ? Map<String, dynamic>.from(map['securitySettings']) : null,
     );
@@ -49,6 +52,7 @@ class UserModel {
       'phoneNumber': phoneNumber,
       'country': country,
       'profilePictureUrl': profilePictureUrl,
+      'monthlyBudget': monthlyBudget,
       'preferences': preferences,
       'securitySettings': securitySettings,
     };
@@ -59,6 +63,7 @@ class UserModel {
     String? phoneNumber,
     String? country,
     String? profilePictureUrl,
+    double? monthlyBudget,
     Map<String, dynamic>? preferences,
     Map<String, dynamic>? securitySettings,
   }) {
@@ -69,6 +74,7 @@ class UserModel {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       country: country ?? this.country,
       profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
+      monthlyBudget: monthlyBudget ?? this.monthlyBudget,
       preferences: preferences ?? this.preferences,
       securitySettings: securitySettings ?? this.securitySettings,
     );
