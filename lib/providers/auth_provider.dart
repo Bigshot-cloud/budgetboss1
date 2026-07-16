@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../core/services/auth_service.dart';
@@ -71,6 +72,32 @@ class AuthProvider with ChangeNotifier {
     await _authService.updateUserData(updatedUser);
     _userModel = updatedUser;
     notifyListeners();
+  }
+
+  Future<void> uploadProfilePicture(File imageFile) async {
+    if (_userModel == null) return;
+    _setLoading(true);
+    try {
+      final url = await _authService.uploadProfilePicture(_userModel!.id, imageFile);
+      if (url != null) {
+        final updatedUser = _userModel!.copyWith(profilePictureUrl: () => url);
+        await updateUser(updatedUser);
+      }
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> removeProfilePicture() async {
+    if (_userModel == null) return;
+    _setLoading(true);
+    try {
+      await _authService.removeProfilePicture(_userModel!.id);
+      final updatedUser = _userModel!.copyWith(profilePictureUrl: () => null);
+      await updateUser(updatedUser);
+    } finally {
+      _setLoading(false);
+    }
   }
 
   void _setLoading(bool value) {

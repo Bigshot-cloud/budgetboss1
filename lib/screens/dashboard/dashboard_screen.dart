@@ -14,6 +14,9 @@ import 'package:budgetboss_app/screens/debt/debt_screen.dart';
 import 'package:budgetboss_app/screens/savings/savings_screen.dart';
 import 'package:budgetboss_app/core/services/sms_service.dart';
 
+import 'package:budgetboss_app/providers/auth_provider.dart';
+import 'package:budgetboss_app/screens/profile/profile_screen.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -49,6 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final user = context.watch<AuthProvider>().user;
 
     return Scaffold(
       appBar: AppBar(
@@ -102,9 +106,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.account_balance_wallet, size: 50, color: AppColors.gold),
+                  CircleAvatar(
+                    radius: 35,
+                    backgroundColor: colorScheme.surface,
+                    backgroundImage: user?.profilePictureUrl != null
+                        ? NetworkImage(user!.profilePictureUrl!)
+                        : null,
+                    child: user?.profilePictureUrl == null
+                        ? const Icon(Icons.person, size: 35, color: AppColors.gold)
+                        : null,
+                  ),
                   const SizedBox(height: 10),
-                  Text('BudgetBoss Menu', style: TextStyle(color: colorScheme.onSurface, fontSize: 20)),
+                  Text(user?.fullName ?? 'BudgetBoss User', style: TextStyle(color: colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),

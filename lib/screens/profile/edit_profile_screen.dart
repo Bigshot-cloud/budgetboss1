@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,6 +18,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _countryController;
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -35,17 +37,77 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImage(ImageSource source) async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(
+      source: source,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 75,
+    );
     
-    if (!mounted) return;
-
     if (image != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile picture selected (Upload logic would go here)')),
-      );
+      setState(() => _isUploading = true);
+      try {
+        final authProvider = context.read<AuthProvider>();
+        await authProvider.uploadProfilePicture(File(image.path));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile picture updated successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to upload image: $e')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isUploading = false);
+      }
     }
+  }
+
+  void _showImagePickerOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.navy,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppColors.gold),
+              title: const Text('Gallery', style: TextStyle(color: AppColors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppColors.gold),
+              title: const Text('Camera', style: TextStyle(color: AppColors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            if (context.read<AuthProvider>().user?.profilePictureUrl != null)
+              ListTile(
+                leading: const Icon(Icons.delete, color: AppColors.expense),
+                title: const Text('Remove Picture', style: TextStyle(color: AppColors.expense)),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.read<AuthProvider>().removeProfilePicture();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _saveProfile() async {
@@ -93,22 +155,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 60,
+                    backgroundColor: AppColors.navy,
                     backgroundImage: user?.profilePictureUrl != null
                         ? NetworkImage(user!.profilePictureUrl!)
-                        : const NetworkImage('https://i.pravatar.cc/300?img=12'),
+                        : null,
+                    child: user?.profilePictureUrl == null
+                        ? const Icon(Icons.person, size: 60, color: AppColors.gold)
+                        : null,
                   ),
+                  if (_isUploading)
+                    const Positioned.fill(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.gold),
+                      ),
+                    ),
                   Positioned(
                     bottom: 0,
                     right: 0,
                     child: GestureDetector(
-                      onTap: _pickImage,
+                      onTap: _isUploading ? null : _showImagePickerOptions,
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: const BoxDecoration(
                           color: AppColors.gold,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.camera_alt, color: AppColors.navy, size: 20),
+                        child: Icon(
+                          _isUploading ? Icons.hourglass_empty : Icons.camera_alt,
+                          color: AppColors.navy,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),

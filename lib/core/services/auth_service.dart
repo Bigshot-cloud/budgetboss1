@@ -1,12 +1,35 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../../models/user_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   Stream<User?> get userStream => _auth.authStateChanges();
+
+  Future<String?> uploadProfilePicture(String userId, File imageFile) async {
+    try {
+      final ref = _storage.ref().child('profile_pictures').child('$userId.jpg');
+      await ref.putFile(imageFile);
+      final url = await ref.getDownloadURL();
+      return url;
+    } catch (e) {
+      print('Error uploading profile picture: $e');
+      return null;
+    }
+  }
+
+  Future<void> removeProfilePicture(String userId) async {
+    try {
+      await _storage.ref().child('profile_pictures').child('$userId.jpg').delete();
+    } catch (e) {
+      print('Error deleting profile picture: $e');
+    }
+  }
 
   Future<UserCredential?> signUp({
     required String email,
