@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'firebase_options.dart';
 
 import 'core/theme/app_theme.dart';
 import 'screens/splash/splash_screen.dart';
@@ -36,10 +37,13 @@ Future<void> main() async {
 
 Future<void> _initFirebase() async {
   try {
-    await Firebase.initializeApp();
-    debugPrint('Firebase initialized successfully');
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('Firebase initialized successfully with options');
 
-    // Activate App Check without blocking the main thread
+    // TODO: Re-enable Firebase App Check after debugging the release APK startup crash.
+    /*
     FirebaseAppCheck.instance.activate(
       androidProvider: AndroidProvider.debug,
     ).then((_) {
@@ -47,6 +51,8 @@ Future<void> _initFirebase() async {
     }).catchError((e) {
       debugPrint('App Check initialization error: $e');
     });
+    */
+    debugPrint('Firebase App Check is temporarily disabled for testing');
     
   } catch (e) {
     debugPrint('Firebase initialization error: $e');
@@ -113,21 +119,20 @@ class BudgetBossApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: theme.themeMode,
-            home: FutureBuilder(
-              future: Future.wait([
-                auth.FirebaseAuth.instance.authStateChanges().first,
-                Future.delayed(const Duration(seconds: 4)),
-              ]),
-              builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
+            home: StreamBuilder<auth.User?>(
+              stream: auth.FirebaseAuth.instance.authStateChanges(),
+              builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const SplashScreen();
                 }
                 
-                final user = snapshot.data?[0] as auth.User?;
-                if (user != null) {
+                if (snapshot.hasData) {
+                  debugPrint('Auth state: User logged in (${snapshot.data?.email})');
                   return const MainScreen();
+                } else {
+                  debugPrint('Auth state: No user logged in');
+                  return const LoginScreen();
                 }
-                return const LoginScreen();
               },
             ),
             builder: (context, child) {

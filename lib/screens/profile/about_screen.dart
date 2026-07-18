@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/constants/app_colors.dart';
 
+import 'debug_screen.dart';
+
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
@@ -13,7 +15,12 @@ class AboutScreen extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 40),
-            const FaIcon(FontAwesomeIcons.crown, size: 80, color: AppColors.gold),
+            GestureDetector(
+              onLongPress: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const DebugScreen()));
+              },
+              child: const FaIcon(FontAwesomeIcons.crown, size: 80, color: AppColors.gold),
+            ),
             const SizedBox(height: 20),
             const Text('BudgetBoss', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const Text('Version 1.0.0', style: TextStyle(color: AppColors.grey)),

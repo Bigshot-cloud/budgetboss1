@@ -35,6 +35,20 @@ class NotificationProvider with ChangeNotifier {
     }
   }
 
+  Future<void> pushNotification(String title, String body) async {
+    if (_currentUserId == null) return;
+    await _firestore
+        .collection('users')
+        .doc(_currentUserId)
+        .collection('notifications')
+        .add({
+      'title': title,
+      'body': body,
+      'date': Timestamp.now(),
+      'isRead': false,
+    });
+  }
+
   Future<void> markAsRead(String userId, String notificationId) async {
     await _firestore
         .collection('users')

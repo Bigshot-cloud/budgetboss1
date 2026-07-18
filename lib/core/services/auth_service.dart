@@ -14,7 +14,14 @@ class AuthService {
   Future<String?> uploadProfilePicture(String userId, File imageFile) async {
     try {
       final ref = _storage.ref().child('profile_pictures').child('$userId.jpg');
-      await ref.putFile(imageFile);
+      
+      // Add metadata to help with caching and browser rendering
+      final metadata = SettableMetadata(
+        contentType: 'image/jpeg',
+        customMetadata: {'userId': userId},
+      );
+
+      await ref.putFile(imageFile, metadata);
       final url = await ref.getDownloadURL();
       return url;
     } catch (e) {
@@ -124,5 +131,9 @@ class AuthService {
 
   Future<void> changePassword(String newPassword) async {
     await _auth.currentUser?.updatePassword(newPassword);
+  }
+
+  Future<void> resetPassword(String email) async {
+    await _auth.sendPasswordResetEmail(email: email);
   }
 }

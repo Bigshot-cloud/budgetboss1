@@ -71,6 +71,8 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: Text(widget.isChange ? 'Change PIN' : 'Create PIN')),
       body: Column(
@@ -78,7 +80,11 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
           const SizedBox(height: 40),
           Text(
             _isConfirming ? 'Confirm your PIN' : 'Enter a 4-digit PIN',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 18, 
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface
+            ),
           ),
           const SizedBox(height: 20),
           Row(
@@ -91,7 +97,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
                 height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: index < dots.length ? AppColors.gold : AppColors.navy,
+                  color: index < dots.length ? AppColors.gold : colorScheme.surfaceContainer,
                   border: Border.all(color: AppColors.gold),
                 ),
               );
@@ -102,14 +108,14 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
             Text(_error, style: const TextStyle(color: AppColors.expense)),
           ],
           const Spacer(),
-          _buildKeyboard(),
+          _buildKeyboard(colorScheme),
           const SizedBox(height: 40),
         ],
       ),
     );
   }
 
-  Widget _buildKeyboard() {
+  Widget _buildKeyboard(ColorScheme colorScheme) {
     return Column(
       children: [
         for (var row in [
@@ -125,10 +131,14 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
               return IconButton(
                 onPressed: key == 'backspace' ? _backspace : () => _onNumberPress(key),
                 icon: key == 'backspace'
-                    ? const Icon(Icons.backspace_outlined, color: AppColors.white)
+                    ? Icon(Icons.backspace_outlined, color: colorScheme.onSurface)
                     : Text(
                         key,
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.white),
+                        style: TextStyle(
+                          fontSize: 24, 
+                          fontWeight: FontWeight.bold, 
+                          color: colorScheme.onSurface
+                        ),
                       ),
                 iconSize: 40,
                 padding: const EdgeInsets.all(20),

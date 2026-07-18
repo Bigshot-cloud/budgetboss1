@@ -2,19 +2,48 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../core/services/security_service.dart';
 
-class SecurityProvider with ChangeNotifier {
+class SecurityProvider with ChangeNotifier, WidgetsBindingObserver {
   final SecurityService _securityService = SecurityService();
   bool _isLocked = false;
   bool _isPinCreated = false;
   Timer? _autoLockTimer;
   Duration _lockDuration = const Duration(days: 365); // Default to Never
   String? _lastDurationStr;
+  DateTime? _lastActiveTime;
 
   bool get isLocked => _isLocked;
   bool get isPinCreated => _isPinCreated;
 
   SecurityProvider() {
     _checkPinStatus();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _autoLockTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _lastActiveTime = DateTime.now();
+    } else if (state == AppLifecycleState.resumed) {
+      _checkAutoLockOnResume();
+    }
+  }
+
+  void _checkAutoLockOnResume() {
+    if (_lastActiveTime != null && _lockDuration != const Duration(days: 365)) {
+      final inactiveDuration = DateTime.now().difference(_lastActiveTime!);
+      if (inactiveDuration >= _lockDuration) {
+        _isLocked = true;
+        notifyListeners();
+      }
+    }
+    resetTimer();
   }
 
   Future<void> _checkPinStatus() async {
@@ -68,6 +97,7 @@ class SecurityProvider with ChangeNotifier {
 
   void unlock() {
     _isLocked = false;
+    _lastActiveTime = DateTime.now();
     resetTimer();
     notifyListeners();
   }
@@ -75,6 +105,13 @@ class SecurityProvider with ChangeNotifier {
   Future<void> updatePin(String newPin) async {
     await _securityService.setPin(newPin);
     _isPinCreated = true;
+    notifyListeners();
+  }
+
+  Future<void> removePin() async {
+    await _securityService.removePin();
+    _isPinCreated = false;
+    _isLocked = false;
     notifyListeners();
   }
 

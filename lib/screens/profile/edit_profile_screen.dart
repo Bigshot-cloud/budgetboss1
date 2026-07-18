@@ -2,9 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:budgetboss_app/core/constants/app_colors.dart';
-import 'package:budgetboss_app/providers/auth_provider.dart';
-import 'package:budgetboss_app/widgets/custom_text_field.dart';
+import '../../core/constants/app_colors.dart';
+import '../../providers/auth_provider.dart';
+import '../../widgets/custom_text_field.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -69,9 +69,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _showImagePickerOptions() {
+    final colorScheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.navy,
+      backgroundColor: colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -81,7 +82,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library, color: AppColors.gold),
-              title: const Text('Gallery', style: TextStyle(color: AppColors.white)),
+              title: Text('Gallery', style: TextStyle(color: colorScheme.onSurface)),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
@@ -89,7 +90,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt, color: AppColors.gold),
-              title: const Text('Camera', style: TextStyle(color: AppColors.white)),
+              title: Text('Camera', style: TextStyle(color: colorScheme.onSurface)),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.camera);
@@ -143,6 +144,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Profile')),
       body: SingleChildScrollView(
@@ -155,7 +158,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 60,
-                    backgroundColor: AppColors.navy,
+                    backgroundColor: colorScheme.surfaceContainer,
                     backgroundImage: user?.profilePictureUrl != null
                         ? NetworkImage(user!.profilePictureUrl!)
                         : null,

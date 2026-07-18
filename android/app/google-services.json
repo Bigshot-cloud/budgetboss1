@@ -29,6 +29,13 @@
             {
               "client_id": "214187203412-ls0768j25kesvjtde5vr6h4u4serkrvr.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "214187203412-ifafnkceegvgpn25tithg54or3f6bupm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.budgetboss.budgetbossApp"
+              }
             }
           ]
         }

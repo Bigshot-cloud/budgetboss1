@@ -25,12 +25,12 @@ class _SecurityScreenState extends State<SecurityScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.navy,
-        title: const Text('Change Password', style: TextStyle(color: AppColors.white)),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text('Change Password', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
         content: TextField(
           controller: _passwordController,
           obscureText: true,
-          style: const TextStyle(color: AppColors.white),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           decoration: const InputDecoration(
             hintText: 'Enter new password',
             hintStyle: TextStyle(color: AppColors.grey),
@@ -48,10 +48,15 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password too short')));
                 return;
               }
-              // This is a placeholder for AuthService.changePassword
-              // In a real app, we might need re-authentication
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password update logic is connected to Firebase')));
-              Navigator.pop(context);
+              try {
+                await context.read<AuthProvider>().updateUserPassword(_passwordController.text);
+                if (mounted) {
+                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated successfully')));
+                   Navigator.pop(context);
+                }
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+              }
             },
             child: const Text('Update'),
           ),
@@ -64,11 +69,11 @@ class _SecurityScreenState extends State<SecurityScreen> {
     final options = ['Immediately', '30 seconds', '1 minute', '5 minutes', '10 minutes', 'Never'];
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.navy,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (context) => ListView(
         shrinkWrap: true,
         children: options.map((opt) => ListTile(
-          title: Text(opt, style: const TextStyle(color: AppColors.white)),
+          title: Text(opt, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
           onTap: () {
             security.setLockDuration(opt);
             _updateSecuritySetting('appLockDuration', opt);
@@ -96,6 +101,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
     final securityProvider = context.watch<SecurityProvider>();
     final user = authProvider.user;
     final settings = user?.securitySettings ?? {};
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -106,6 +112,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
         child: Column(
           children: [
             _buildSecurityToggle(
+              context,
               Icons.lock_outline,
               'App Lock',
               'Lock the app when inactive',
@@ -119,35 +126,72 @@ class _SecurityScreenState extends State<SecurityScreen> {
               },
             ),
             _buildSecurityItem(
+              context,
               Icons.password_outlined, 
               securityProvider.isPinCreated ? 'Change PIN' : 'Create PIN',
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => PinSetupScreen(isChange: securityProvider.isPinCreated))),
             ),
+            if (securityProvider.isPinCreated)
+              _buildSecurityItem(
+                context,
+                Icons.delete_outline, 
+                'Remove PIN',
+                onTap: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: colorScheme.surface,
+                      title: Text('Remove PIN?', style: TextStyle(color: colorScheme.onSurface)),
+                      content: const Text('This will disable app lock.', style: TextStyle(color: Colors.grey)),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove', style: TextStyle(color: AppColors.expense))),
+                      ],
+                    )
+                  );
+                  if (confirm == true) {
+                    await securityProvider.removePin();
+                    _updateSecuritySetting('pinEnabled', false);
+                  }
+                },
+              ),
             _buildSecurityItem(
+              context,
               Icons.vpn_key_outlined, 
               'Change Password',
               onTap: _showChangePasswordDialog,
             ),
             _buildSecurityToggle(
+              context,
               Icons.fingerprint,
               'Biometric Login',
               'Use fingerprint or Face ID',
               settings['biometricEnabled'] ?? false,
-              (val) => _updateSecuritySetting('biometricEnabled', val),
+              (val) async {
+                if (val) {
+                  final success = await securityProvider.authenticateBiometrics();
+                  if (success) {
+                    _updateSecuritySetting('biometricEnabled', true);
+                  }
+                } else {
+                  _updateSecuritySetting('biometricEnabled', false);
+                }
+              },
             ),
             _buildSecurityItem(
+              context,
               Icons.timer_outlined, 
               'Auto Lock', 
               trailing: settings['appLockDuration'] ?? 'Never',
               onTap: () => _showAutoLockPicker(securityProvider, settings),
             ),
             const Spacer(),
-            const Icon(Icons.security, size: 80, color: AppColors.gold),
+            Icon(Icons.security, size: 80, color: AppColors.gold),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Your security is our priority.\nBudgetBoss uses bank-grade encryption.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.grey),
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 40),
           ],
@@ -156,39 +200,42 @@ class _SecurityScreenState extends State<SecurityScreen> {
     );
   }
 
-  Widget _buildSecurityToggle(IconData icon, String title, String subtitle, bool value, Function(bool) onChanged) {
+  Widget _buildSecurityToggle(BuildContext context, IconData icon, String title, String subtitle, bool value, Function(bool) onChanged) {
+    final colorScheme = Theme.of(context).colorScheme;
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, color: AppColors.white, size: 20),
+        decoration: BoxDecoration(color: colorScheme.surfaceContainer, borderRadius: BorderRadius.circular(10)),
+        child: Icon(icon, color: AppColors.gold, size: 20),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text(subtitle, style: const TextStyle(color: AppColors.grey, fontSize: 12)),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+      subtitle: Text(subtitle, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeThumbColor: AppColors.income,
+        activeTrackColor: AppColors.gold.withOpacity(0.5),
+        activeColor: AppColors.gold,
       ),
       contentPadding: EdgeInsets.zero,
     );
   }
 
-  Widget _buildSecurityItem(IconData icon, String title, {String? trailing, VoidCallback? onTap}) {
+  Widget _buildSecurityItem(BuildContext context, IconData icon, String title, {String? trailing, VoidCallback? onTap}) {
+    final colorScheme = Theme.of(context).colorScheme;
     return ListTile(
       onTap: onTap,
       leading: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, color: AppColors.white, size: 20),
+        decoration: BoxDecoration(color: colorScheme.surfaceContainer, borderRadius: BorderRadius.circular(10)),
+        child: Icon(icon, color: AppColors.gold, size: 20),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (trailing != null) Text(trailing, style: const TextStyle(color: AppColors.gold, fontSize: 12)),
           const SizedBox(width: 10),
-          const Icon(Icons.chevron_right, color: AppColors.grey),
+          Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
         ],
       ),
       contentPadding: EdgeInsets.zero,

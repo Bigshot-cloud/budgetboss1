@@ -32,7 +32,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _startSmsListener();
+    _requestSmsPermissions();
+  }
+
+  void _requestSmsPermissions() async {
+    final bool? result = await _smsService.telephony.requestPhoneAndSmsPermissions;
+    if (result == true) {
+      _startSmsListener();
+    }
   }
 
   void _startSmsListener() {

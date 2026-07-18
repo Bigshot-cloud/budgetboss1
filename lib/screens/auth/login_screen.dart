@@ -35,10 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
               _passwordController.text.trim(),
             );
         if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainScreen()),
-          );
+          // Navigation is handled by auth state stream in main.dart
         }
       } catch (e) {
         if (mounted) {
@@ -46,6 +43,30 @@ class _LoginScreenState extends State<LoginScreen> {
             SnackBar(content: Text(e.toString())),
           );
         }
+      }
+    }
+  }
+
+  void _forgotPassword() async {
+    if (_emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your email first')),
+      );
+      return;
+    }
+    try {
+      // Assuming AuthService has resetPassword
+      await context.read<AuthProvider>().resetPassword(_emailController.text.trim());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password reset email sent!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
       }
     }
   }
@@ -126,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: _forgotPassword,
                       child: const Text('Forgot Password?', style: TextStyle(color: AppColors.gold)),
                     ),
                   ],

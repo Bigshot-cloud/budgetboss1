@@ -3,6 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/security_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../auth/login_screen.dart';
+
+import 'pin_recovery_screen.dart';
 
 class PinLockScreen extends StatefulWidget {
   const PinLockScreen({super.key});
@@ -46,10 +50,21 @@ class _PinLockScreenState extends State<PinLockScreen> {
     }
   }
 
+  void _handleForgotPin() {
+    debugPrint('Forgot PIN button pressed');
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PinRecoveryScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: AppColors.darkNavy,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -57,12 +72,19 @@ class _PinLockScreenState extends State<PinLockScreen> {
             const Spacer(),
             const FaIcon(FontAwesomeIcons.lock, size: 50, color: AppColors.gold),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'App Locked',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.white),
+              style: TextStyle(
+                fontSize: 24, 
+                fontWeight: FontWeight.bold, 
+                color: colorScheme.onSurface
+              ),
             ),
             const SizedBox(height: 10),
-            const Text('Enter your PIN to continue', style: TextStyle(color: AppColors.grey)),
+            Text(
+              'Enter your PIN to continue', 
+              style: TextStyle(color: colorScheme.onSurfaceVariant)
+            ),
             const SizedBox(height: 40),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -73,7 +95,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
                   height: 20,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: index < _pin.length ? AppColors.gold : AppColors.navy,
+                    color: index < _pin.length ? AppColors.gold : colorScheme.surfaceContainer,
                     border: Border.all(color: AppColors.gold),
                   ),
                 );
@@ -84,20 +106,29 @@ class _PinLockScreenState extends State<PinLockScreen> {
               Text(_error, style: const TextStyle(color: AppColors.expense)),
             ],
             const Spacer(),
-            _buildKeyboard(),
+            _buildKeyboard(colorScheme),
             const SizedBox(height: 20),
-            TextButton(
-              onPressed: () {
-                context.read<SecurityProvider>().authenticateBiometrics();
-              },
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.fingerprint, color: AppColors.gold),
-                  SizedBox(width: 10),
-                  Text('Unlock with Biometrics', style: TextStyle(color: AppColors.gold)),
-                ],
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextButton(
+                  onPressed: _handleForgotPin,
+                  child: const Text('Forgot PIN?', style: TextStyle(color: AppColors.gold)),
+                ),
+                TextButton(
+                  onPressed: () {
+                    context.read<SecurityProvider>().authenticateBiometrics();
+                  },
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.fingerprint, color: AppColors.gold),
+                      SizedBox(width: 10),
+                      Text('Use Biometrics', style: TextStyle(color: AppColors.gold)),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
           ],
@@ -106,7 +137,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
     );
   }
 
-  Widget _buildKeyboard() {
+  Widget _buildKeyboard(ColorScheme colorScheme) {
     return Column(
       children: [
         for (var row in [
@@ -122,10 +153,14 @@ class _PinLockScreenState extends State<PinLockScreen> {
               return IconButton(
                 onPressed: key == 'backspace' ? _backspace : () => _onNumberPress(key),
                 icon: key == 'backspace'
-                    ? const Icon(Icons.backspace_outlined, color: AppColors.white)
+                    ? Icon(Icons.backspace_outlined, color: colorScheme.onSurface)
                     : Text(
                         key,
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.white),
+                        style: TextStyle(
+                          fontSize: 24, 
+                          fontWeight: FontWeight.bold, 
+                          color: colorScheme.onSurface
+                        ),
                       ),
                 iconSize: 40,
                 padding: const EdgeInsets.all(20),

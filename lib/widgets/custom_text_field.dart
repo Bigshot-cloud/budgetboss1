@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
 
-class CustomTextField extends StatelessWidget {
+class CustomTextField extends StatefulWidget {
   final TextEditingController controller;
   final String hintText;
   final IconData prefixIcon;
@@ -22,21 +22,47 @@ class CustomTextField extends StatelessWidget {
   });
 
   @override
+  State<CustomTextField> createState() => _CustomTextFieldState();
+}
+
+class _CustomTextFieldState extends State<CustomTextField> {
+  bool _obscureText = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _obscureText = widget.isPassword;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return TextFormField(
-      controller: controller,
-      obscureText: isPassword,
-      keyboardType: keyboardType,
-      validator: validator,
-      enabled: enabled,
-      style: TextStyle(color: enabled ? colorScheme.onSurface : colorScheme.onSurfaceVariant),
+      controller: widget.controller,
+      obscureText: _obscureText,
+      keyboardType: widget.keyboardType,
+      validator: widget.validator,
+      enabled: widget.enabled,
+      style: TextStyle(color: widget.enabled ? colorScheme.onSurface : colorScheme.onSurfaceVariant),
       decoration: InputDecoration(
-        hintText: hintText,
+        hintText: widget.hintText,
         hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-        prefixIcon: Icon(prefixIcon, color: AppColors.gold.withValues(alpha: enabled ? 1.0 : 0.5), size: 20),
+        prefixIcon: Icon(widget.prefixIcon, color: AppColors.gold.withValues(alpha: widget.enabled ? 1.0 : 0.5), size: 20),
+        suffixIcon: widget.isPassword
+            ? IconButton(
+                icon: Icon(
+                  _obscureText ? Icons.visibility_off : Icons.visibility,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscureText = !_obscureText;
+                  });
+                },
+              )
+            : null,
         filled: true,
         fillColor: colorScheme.surfaceContainer,
         border: OutlineInputBorder(

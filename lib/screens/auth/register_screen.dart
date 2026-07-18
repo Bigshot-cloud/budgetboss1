@@ -177,11 +177,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: ElevatedButton(
                     onPressed: authProvider.isLoading ? null : _register,
                     child: authProvider.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
+                        ? const CircularProgressIndicator(color: Colors.white)
                         : const Text('Register'),
                   ),
                 ),
