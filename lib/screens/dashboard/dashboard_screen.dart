@@ -15,7 +15,6 @@ import 'package:budgetboss_app/screens/savings/savings_screen.dart';
 import 'package:budgetboss_app/core/services/sms_service.dart';
 
 import 'package:budgetboss_app/providers/auth_provider.dart';
-import 'package:budgetboss_app/screens/profile/profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -27,11 +26,12 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isOverview = true;
   String _timeFilter = 'This Month';
-  final SmsService _smsService = SmsService();
+  late final SmsService _smsService;
 
   @override
   void initState() {
     super.initState();
+    _smsService = SmsService(); // Gets the singleton instance
     _requestSmsPermissions();
   }
 

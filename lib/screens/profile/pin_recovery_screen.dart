@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/security_provider.dart';
 import '../../widgets/custom_text_field.dart';
@@ -34,16 +33,16 @@ class _PinRecoveryScreenState extends State<PinRecoveryScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // We need a way to verify password without full login flow if possible, 
-      // but re-login is standard.
       await authProvider.login(email, _passwordController.text.trim());
-      setState(() {
-        _currentStep = 1;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
       if (mounted) {
+        setState(() {
+          _currentStep = 1;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Invalid password: $e')),
         );
@@ -64,6 +63,7 @@ class _PinRecoveryScreenState extends State<PinRecoveryScreen> {
     setState(() => _isLoading = true);
     await context.read<SecurityProvider>().updatePin(_pinController.text);
     if (mounted) {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PIN reset successfully')));
       Navigator.pop(context);
     }
@@ -98,7 +98,11 @@ class _PinRecoveryScreenState extends State<PinRecoveryScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _verifyPassword,
                   child: _isLoading 
-                    ? const CircularProgressIndicator(color: Colors.white) 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
                     : const Text('Verify'),
                 ),
               ),
@@ -127,7 +131,11 @@ class _PinRecoveryScreenState extends State<PinRecoveryScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _resetPin,
                   child: _isLoading 
-                    ? const CircularProgressIndicator(color: Colors.white) 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
                     : const Text('Reset PIN'),
                 ),
               ),

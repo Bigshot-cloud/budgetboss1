@@ -47,7 +47,6 @@ class BudgetScreen extends StatelessWidget {
     final txProvider = context.watch<TransactionProvider>();
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
-    final colorScheme = Theme.of(context).colorScheme;
     
     final totalSpent = txProvider.monthlyExpense;
     final double budgetLimit = user?.monthlyBudget ?? 8000.0; 

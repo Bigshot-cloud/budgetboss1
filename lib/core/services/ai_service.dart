@@ -20,7 +20,6 @@ class AiService {
     // 🟡 2. SPENDING ANALYSIS ENGINE
     if (q.contains("spend") || q.contains("expense") || q.contains("money") || q.contains("balance")) {
       if (totalBalance != null && totalSpent != null) {
-        double currentBalance = totalBalance;
         double usage = totalBalance > 0 ? (totalSpent / (totalSpent + totalBalance)) * 100 : 100;
 
         if (q.contains("balance")) {

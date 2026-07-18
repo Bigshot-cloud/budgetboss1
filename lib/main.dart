@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 
@@ -119,39 +118,48 @@ class BudgetBossApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: theme.themeMode,
-            home: StreamBuilder<auth.User?>(
-              stream: auth.FirebaseAuth.instance.authStateChanges(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const SplashScreen();
-                }
-                
-                if (snapshot.hasData) {
-                  debugPrint('Auth state: User logged in (${snapshot.data?.email})');
-                  return const MainScreen();
-                } else {
-                  debugPrint('Auth state: No user logged in');
-                  return const LoginScreen();
-                }
-              },
-            ),
+            home: const AuthenticationWrapper(),
             builder: (context, child) {
-              return Listener(
-                onPointerDown: (_) => security.resetTimer(),
-                child: Stack(
-                  children: [
-                    child!,
-                    if (security.isLocked)
-                      const Positioned.fill(
-                        child: PinLockScreen(),
-                      ),
-                  ],
-                ),
+              return Stack(
+                children: [
+                  Listener(
+                    onPointerDown: (_) => security.resetTimer(),
+                    child: child!,
+                  ),
+                  if (security.isLocked)
+                    const Positioned.fill(
+                      child: PinLockScreen(),
+                    ),
+                ],
               );
             },
           );
         },
       ),
+    );
+  }
+}
+
+class AuthenticationWrapper extends StatelessWidget {
+  const AuthenticationWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<auth.User?>(
+      stream: auth.FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SplashScreen();
+        }
+        
+        if (snapshot.hasData) {
+          debugPrint('AuthenticationWrapper: User logged in (${snapshot.data?.email})');
+          return const MainScreen();
+        } else {
+          debugPrint('AuthenticationWrapper: No user logged in');
+          return const LoginScreen();
+        }
+      },
     );
   }
 }

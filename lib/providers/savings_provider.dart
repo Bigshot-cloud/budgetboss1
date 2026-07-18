@@ -11,8 +11,8 @@ class SavingsProvider with ChangeNotifier {
 
   List<SavingsModel> get goals => [..._goals];
   
-  double get totalSaved => _goals.fold(0, (sum, item) => sum + item.savedAmount);
-  double get totalTarget => _goals.fold(0, (sum, item) => sum + item.targetAmount);
+  double get totalSaved => _goals.fold(0.0, (acc, item) => acc + item.savedAmount);
+  double get totalTarget => _goals.fold(0.0, (acc, item) => acc + item.targetAmount);
 
   void setUser(String? userId) {
     if (_currentUserId == userId) return;

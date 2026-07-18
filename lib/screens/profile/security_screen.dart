@@ -50,12 +50,12 @@ class _SecurityScreenState extends State<SecurityScreen> {
               }
               try {
                 await context.read<AuthProvider>().updateUserPassword(_passwordController.text);
-                if (mounted) {
-                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated successfully')));
-                   Navigator.pop(context);
-                }
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated successfully')));
+                Navigator.pop(context);
               } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
             child: const Text('Update'),
@@ -213,8 +213,8 @@ class _SecurityScreenState extends State<SecurityScreen> {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeTrackColor: AppColors.gold.withOpacity(0.5),
-        activeColor: AppColors.gold,
+        activeTrackColor: AppColors.gold.withValues(alpha: 0.5),
+        activeThumbColor: AppColors.gold,
       ),
       contentPadding: EdgeInsets.zero,
     );

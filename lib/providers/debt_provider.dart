@@ -11,8 +11,8 @@ class DebtProvider with ChangeNotifier {
 
   List<DebtModel> get debts => [..._debts];
   
-  double get totalDebt => _debts.fold(0, (sum, item) => sum + item.amount);
-  double get totalPaid => _debts.fold(0, (sum, item) => sum + item.paidAmount);
+  double get totalDebt => _debts.fold(0.0, (acc, item) => acc + item.amount);
+  double get totalPaid => _debts.fold(0.0, (acc, item) => acc + item.paidAmount);
   double get overallProgress => totalDebt > 0 ? (totalPaid / totalDebt) : 0;
 
   void setUser(String? userId) {

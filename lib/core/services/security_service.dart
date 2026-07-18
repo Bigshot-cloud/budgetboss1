@@ -3,7 +3,7 @@ import 'package:local_auth/local_auth.dart';
 
 class SecurityService {
   final _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    aOptions: AndroidOptions(),
   );
   final _localAuth = LocalAuthentication();
 

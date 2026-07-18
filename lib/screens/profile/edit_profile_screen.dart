@@ -57,6 +57,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           );
         }
       } catch (e) {
+        debugPrint('Failed to upload image: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to upload image: $e')),
@@ -132,9 +133,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           Navigator.pop(context);
         }
       } catch (e) {
+        debugPrint('Failed to save profile: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString())),
+            SnackBar(content: Text('Failed to save profile: $e')),
           );
         }
       }
@@ -155,8 +157,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: Column(
             children: [
               Stack(
+                alignment: Alignment.center,
                 children: [
                   CircleAvatar(
+                    key: ValueKey(user?.profilePictureUrl),
                     radius: 60,
                     backgroundColor: colorScheme.surfaceContainer,
                     backgroundImage: user?.profilePictureUrl != null
@@ -167,9 +171,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         : null,
                   ),
                   if (_isUploading)
-                    const Positioned.fill(
+                    const SizedBox(
+                      width: 120,
+                      height: 120,
                       child: CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(AppColors.gold),
+                        strokeWidth: 6,
                       ),
                     ),
                   Positioned(
@@ -220,9 +227,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 prefixIcon: Icons.public,
               ),
               const SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: _saveProfile,
-                child: const Text('Save Changes'),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isUploading ? null : _saveProfile,
+                  child: const Text('Save Changes'),
+                ),
               ),
             ],
           ),

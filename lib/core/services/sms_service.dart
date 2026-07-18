@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:telephony/telephony.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,13 +8,29 @@ import 'openai_service.dart';
 import 'debug_service.dart';
 
 class SmsService {
+  // Singleton pattern to ensure only one instance exists
+  static final SmsService _instance = SmsService._internal();
+  factory SmsService() => _instance;
+  SmsService._internal();
+
   final Telephony telephony = Telephony.instance;
   final _openAI = OpenAIService();
   final _debugService = DebugService();
 
-  final Set<String> _processedSms = {}; // Duplicate prevention
+  bool _isListening = false;
+  final Set<String> _processedSmsHashes = {}; // In-memory cache for session duplicates
 
   void startListening(Function(Map<String, dynamic>) onTransaction) {
+    if (_isListening) {
+      _debugService.log(
+        feature: "SMS Listener",
+        status: "Warning",
+        message: "Listener already active. Ignoring start request.",
+      );
+      return;
+    }
+
+    _isListening = true;
     _debugService.log(
       feature: "SMS Listener",
       status: "Active",
@@ -24,7 +41,17 @@ class SmsService {
       onNewMessage: (SmsMessage message) async {
         String body = message.body ?? "";
         String sender = message.address ?? "Unknown";
-        String smsId = message.id?.toString() ?? body.hashCode.toString();
+        int? timestamp = message.date;
+        
+        // 🚨 1. Robust Duplicate Prevention (Local)
+        // Generate a unique hash for this SMS based on sender, body and timestamp
+        String smsHash = _generateSmsHash(sender, body, timestamp);
+        
+        if (_processedSmsHashes.contains(smsHash)) {
+           _debugService.log(feature: "SMS Listener", status: "Ignored", message: "Duplicate SMS detected locally: $smsHash");
+           return;
+        }
+        _processedSmsHashes.add(smsHash);
 
         _debugService.log(
           feature: "SMS Listener",
@@ -33,12 +60,7 @@ class SmsService {
           details: body,
         );
 
-        if (_processedSms.contains(smsId)) {
-           _debugService.log(feature: "SMS Listener", status: "Ignored", message: "Duplicate SMS ID: $smsId");
-           return;
-        }
-        _processedSms.add(smsId);
-
+        // 🚨 2. Financial Filter
         if (!_isFinancialSms(body)) {
           _debugService.log(
             feature: "SMS Listener",
@@ -51,26 +73,38 @@ class SmsService {
         _debugService.log(
           feature: "SMS Listener",
           status: "Match",
-          message: "Financial transaction detected. Processing with AI...",
+          message: "Financial transaction detected. Processing...",
         );
 
         try {
+          // 🚨 3. AI Extraction with strict constraints
           Map<String, dynamic> enriched = await _parseWithAI(body);
           
           if (enriched['amount'] > 0) {
-            await _saveToFirebase(enriched);
-            onTransaction(enriched);
+            // 🚨 4. IDEMPOTENT Database Write
+            // Use the SMS hash as the Firestore Document ID to prevent duplicates at the database level
+            bool saved = await _saveToFirebaseIdempotent(enriched, smsHash);
             
-            _debugService.log(
-              feature: "SMS Parser",
-              status: "Success",
-              message: "Transaction logged: ${enriched['title']} (GH₵ ${enriched['amount']})",
-            );
+            if (saved) {
+              onTransaction(enriched);
+              
+              _debugService.log(
+                feature: "SMS Parser",
+                status: "Success",
+                message: "Transaction logged: ${enriched['title']} (GH₵ ${enriched['amount']})",
+              );
 
-            _sendSystemNotification(
-              "Transaction Recorded 💰",
-              "Logged ${enriched['title']} for GH₵ ${enriched['amount']}",
-            );
+              _sendSystemNotification(
+                "Transaction Recorded 💰",
+                "Logged ${enriched['title']} for GH₵ ${enriched['amount']}",
+              );
+            } else {
+              _debugService.log(
+                feature: "SMS Parser",
+                status: "Ignored",
+                message: "Transaction already exists in database.",
+              );
+            }
           } else {
              _debugService.log(
               feature: "SMS Parser",
@@ -92,10 +126,18 @@ class SmsService {
     );
   }
 
+  String _generateSmsHash(String sender, String body, int? timestamp) {
+    String input = "$sender|$body|$timestamp";
+    return sha256.convert(utf8.encode(input)).toString();
+  }
+
   bool _isFinancialSms(String sms) {
     String text = sms.toLowerCase();
     
-    // Core financial keywords (must contain at least one)
+    // Explicit exclusions to reduce noise
+    if (text.contains("otp is") || text.contains("verification code")) return false;
+
+    // Core financial keywords
     final financialKeywords = [
       "received", "sent", "momo", "mobile money", "transfer", "ghs", "ghc", 
       "paid", "credited", "debited", "alert", "balance", "transaction", "cash",
@@ -107,18 +149,24 @@ class SmsService {
 
   Future<Map<String, dynamic>> _parseWithAI(String sms) async {
     final response = await _openAI.analyzeFinance("""
-You are a financial data extractor for BudgetBoss.
+You are a financial data extractor for BudgetBoss. 
 Extract structured transaction data from this SMS.
 
 SMS: $sms
 
-Return JSON ONLY:
+Rules:
+1. Classification: 
+   - If the message says "received", "credited", "deposit", "cash in", it is an "income".
+   - If the message says "sent", "paid", "withdrawal", "transfer", "cash out", "fee", it is an "expense".
+   - NEVER return both. Choose the primary action.
+2. Return JSON ONLY.
+
+Return format:
 {
   "title": "Merchant/Sender Name",
   "amount": 0.0,
   "type": "income | expense",
   "category": "Food & Dining | Transportation | Shopping | Utilities | Entertainment | Healthcare | Education | Salary | Savings | Investment | Bills | Transfers | Mobile Money | Bank Deposit | ATM Withdrawal | Others",
-  "date": "ISO format",
   "note": "summary"
 }
 """, isChat: false);
@@ -168,8 +216,11 @@ Return JSON ONLY:
       amount = double.tryParse(match.group(1) ?? "0") ?? 0.0;
     }
 
-    String type = sms.toLowerCase().contains("received") || sms.toLowerCase().contains("credited") 
-      ? "income" : "expense";
+    String lowerSms = sms.toLowerCase();
+    String type = "expense";
+    if (lowerSms.contains("received") || lowerSms.contains("credited") || lowerSms.contains("deposit") || lowerSms.contains("cash in")) {
+       type = "income";
+    }
 
     return {
       "title": "SMS Transaction (Local)",
@@ -204,16 +255,21 @@ Return JSON ONLY:
     }
   }
 
-  Future<void> _saveToFirebase(Map<String, dynamic> data) async {
+  Future<bool> _saveToFirebaseIdempotent(Map<String, dynamic> data, String smsHash) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) return false;
 
     try {
-      await FirebaseFirestore.instance
+      final docRef = FirebaseFirestore.instance
           .collection("users")
           .doc(user.uid)
           .collection("transactions")
-          .add({
+          .doc("sms_$smsHash"); // 🚨 Use hash as ID to ensure only one document exists per SMS
+
+      final doc = await docRef.get();
+      if (doc.exists) return false; // Already processed
+
+      await docRef.set({
         "title": data["title"],
         "type": "TransactionType.${data["type"]}",
         "amount": data["amount"],
@@ -223,11 +279,14 @@ Return JSON ONLY:
         "source": "sms",
         "rawSms": data["rawSms"],
         "note": data["note"],
+        "smsHash": smsHash, // Store for reference
       });
-      _debugService.log(feature: "Firebase", status: "Success", message: "Transaction saved to cloud");
+      
+      _debugService.log(feature: "Firebase", status: "Success", message: "Transaction saved with ID: sms_$smsHash");
+      return true;
     } catch (e) {
        _debugService.log(feature: "Firebase", status: "Failed", message: "Error saving to cloud", details: e.toString());
-       throw e;
+       rethrow;
     }
   }
 
@@ -235,15 +294,19 @@ Return JSON ONLY:
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('notifications')
-        .add({
-      'title': title,
-      'body': body,
-      'date': Timestamp.now(),
-      'isRead': false,
-    });
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('notifications')
+          .add({
+        'title': title,
+        'body': body,
+        'date': Timestamp.now(),
+        'isRead': false,
+      });
+    } catch (e) {
+      debugPrint("Error sending system notification: $e");
+    }
   }
 }

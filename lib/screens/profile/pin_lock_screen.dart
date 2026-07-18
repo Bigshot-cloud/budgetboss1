@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/security_provider.dart';
-import '../../providers/auth_provider.dart';
-import '../auth/login_screen.dart';
 
 import 'pin_recovery_screen.dart';
 
@@ -60,7 +58,6 @@ class _PinLockScreenState extends State<PinLockScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(

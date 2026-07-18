@@ -22,7 +22,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     super.initState();
     final user = context.read<AuthProvider>().user;
     if (user != null && user.preferences['notifications'] != null) {
-      final notify = Map<String, bool>.from(user.preferences['notifications']);
+      final notify = Map<String, dynamic>.from(user.preferences['notifications']);
       _budgetReminders = notify['budget'] ?? true;
       _billReminders = notify['bill'] ?? true;
       _savingsReminders = notify['savings'] ?? false;
@@ -80,16 +80,18 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   }
 
   Widget _buildToggle(String title, String subtitle, bool value, Function(bool) onChanged) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
-      color: AppColors.navy,
+      color: colorScheme.surfaceContainer,
       margin: const EdgeInsets.only(bottom: 15),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: SwitchListTile(
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.white)),
-        subtitle: Text(subtitle, style: const TextStyle(color: AppColors.grey, fontSize: 12)),
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+        subtitle: Text(subtitle, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
         value: value,
         onChanged: onChanged,
-        activeColor: AppColors.gold,
+        activeThumbColor: AppColors.income,
+        activeTrackColor: AppColors.income.withValues(alpha: 0.5),
       ),
     );
   }

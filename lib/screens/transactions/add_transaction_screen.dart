@@ -45,8 +45,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       icon: _getIconForCategory(_selectedCategory),
     );
 
-    await context.read<TransactionProvider>().addTransaction(userId, newTx);
-    if (mounted) Navigator.pop(context);
+    try {
+      await context.read<TransactionProvider>().addTransaction(userId, newTx);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Transaction saved successfully')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save transaction: $e')),
+        );
+      }
+    }
   }
 
   IconData _getIconForCategory(String category) {

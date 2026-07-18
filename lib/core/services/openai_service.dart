@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'debug_service.dart';
@@ -12,7 +11,6 @@ class OpenAIService {
     final feature = isChat ? "AI Assistant" : "SMS Parser";
 
     if (_apiKey.isEmpty) {
-      const errorMsg = "OpenAI API Key is missing from .env file";
       _debugService.log(
         feature: feature,
         status: "Error",

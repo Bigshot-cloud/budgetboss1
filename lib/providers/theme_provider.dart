@@ -16,9 +16,13 @@ class ThemeProvider with ChangeNotifier {
     final themeStr = prefs.getString(_themeKey);
     
     if (themeStr != null) {
-      if (themeStr == 'Light') _themeMode = ThemeMode.light;
-      else if (themeStr == 'Dark') _themeMode = ThemeMode.dark;
-      else _themeMode = ThemeMode.system;
+      if (themeStr == 'Light') {
+        _themeMode = ThemeMode.light;
+      } else if (themeStr == 'Dark') {
+        _themeMode = ThemeMode.dark;
+      } else {
+        _themeMode = ThemeMode.system;
+      }
     } else {
       _themeMode = ThemeMode.dark; // Default
     }
@@ -26,9 +30,13 @@ class ThemeProvider with ChangeNotifier {
   }
 
   Future<void> setTheme(String mode) async {
-    if (mode == 'Light') _themeMode = ThemeMode.light;
-    else if (mode == 'Dark') _themeMode = ThemeMode.dark;
-    else _themeMode = ThemeMode.system;
+    if (mode == 'Light') {
+      _themeMode = ThemeMode.light;
+    } else if (mode == 'Dark') {
+      _themeMode = ThemeMode.dark;
+    } else {
+      _themeMode = ThemeMode.system;
+    }
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_themeKey, mode);

@@ -4,7 +4,6 @@ import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../core/services/export_service.dart';
-import '../auth/login_screen.dart';
 import 'edit_profile_screen.dart';
 import 'preferences_screen.dart';
 import 'security_screen.dart';
@@ -27,6 +26,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -37,9 +37,11 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 20),
+            // Use ValueKey to force image refresh when URL changes
             CircleAvatar(
+              key: ValueKey(user?.profilePictureUrl),
               radius: 50,
-              backgroundColor: AppColors.navy,
+              backgroundColor: colorScheme.surfaceContainer,
               backgroundImage: user?.profilePictureUrl != null
                   ? NetworkImage(user!.profilePictureUrl!)
                   : null,
@@ -50,12 +52,12 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 15),
             Text(
               user?.fullName ?? 'User Name',
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
             ),
             const SizedBox(height: 5),
             Text(
               user?.email ?? 'email@example.com',
-              style: const TextStyle(color: AppColors.grey, fontSize: 14),
+              style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
             ),
             const SizedBox(height: 15),
             Container(
@@ -71,23 +73,23 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 40),
-            _buildProfileItem(Icons.person_outline, 'Personal Information', onTap: () {
+            _buildProfileItem(context, Icons.person_outline, 'Personal Information', onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfileScreen()));
             }),
-            _buildProfileItem(Icons.settings_outlined, 'Preferences', onTap: () {
+            _buildProfileItem(context, Icons.settings_outlined, 'Preferences', onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const PreferencesScreen()));
             }),
-            _buildProfileItem(Icons.security_outlined, 'Security', onTap: () {
+            _buildProfileItem(context, Icons.security_outlined, 'Security', onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const SecurityScreen()));
             }),
-            _buildProfileItem(Icons.notifications_none_outlined, 'Notification Settings', onTap: () {
+            _buildProfileItem(context, Icons.notifications_none_outlined, 'Notification Settings', onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationSettingsScreen()));
             }),
-            _buildProfileItem(Icons.file_download_outlined, 'Export Records', onTap: () => _exportPdf(context)),
-            _buildProfileItem(Icons.help_outline, 'Help & Support', onTap: () {
+            _buildProfileItem(context, Icons.file_download_outlined, 'Export Records', onTap: () => _exportPdf(context)),
+            _buildProfileItem(context, Icons.help_outline, 'Help & Support', onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
             }),
-            _buildProfileItem(Icons.info_outline, 'About BudgetBoss', onTap: () {
+            _buildProfileItem(context, Icons.info_outline, 'About BudgetBoss', onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen()));
             }),
             const SizedBox(height: 30),
@@ -98,13 +100,7 @@ class ProfileScreen extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () async {
                   await context.read<AuthProvider>().logout();
-                  if (context.mounted) {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
-                      (route) => false,
-                    );
-                  }
+                  // No need to navigate manually, main.dart's AuthenticationWrapper handles it
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.expense.withValues(alpha: 0.1),
@@ -129,7 +125,8 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileItem(IconData icon, String title, {VoidCallback? onTap}) {
+  Widget _buildProfileItem(BuildContext context, IconData icon, String title, {VoidCallback? onTap}) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: ListTile(
@@ -137,13 +134,13 @@ class ProfileScreen extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.navy,
+            color: colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: AppColors.white, size: 20),
+          child: Icon(icon, color: AppColors.gold, size: 20),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-        trailing: const Icon(Icons.chevron_right, color: AppColors.grey),
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.w500, color: colorScheme.onSurface)),
+        trailing: Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
         contentPadding: EdgeInsets.zero,
       ),
     );

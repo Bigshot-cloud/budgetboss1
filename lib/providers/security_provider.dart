@@ -6,6 +6,7 @@ class SecurityProvider with ChangeNotifier, WidgetsBindingObserver {
   final SecurityService _securityService = SecurityService();
   bool _isLocked = false;
   bool _isPinCreated = false;
+  bool _isAppLockEnabled = false;
   Timer? _autoLockTimer;
   Duration _lockDuration = const Duration(days: 365); // Default to Never
   String? _lastDurationStr;
@@ -36,7 +37,7 @@ class SecurityProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   void _checkAutoLockOnResume() {
-    if (_lastActiveTime != null && _lockDuration != const Duration(days: 365)) {
+    if (_isAppLockEnabled && _lastActiveTime != null && _lockDuration != const Duration(days: 365)) {
       final inactiveDuration = DateTime.now().difference(_lastActiveTime!);
       if (inactiveDuration >= _lockDuration) {
         _isLocked = true;
@@ -54,10 +55,25 @@ class SecurityProvider with ChangeNotifier, WidgetsBindingObserver {
 
   void syncSettings(Map<String, dynamic> settings) {
     final durationStr = settings['appLockDuration'] ?? 'Never';
-    if (_lastDurationStr == durationStr) return;
-    _lastDurationStr = durationStr;
+    final isEnabled = settings['pinEnabled'] ?? false;
     
-    setLockDuration(durationStr);
+    bool changed = false;
+    if (_lastDurationStr != durationStr) {
+      _lastDurationStr = durationStr;
+      setLockDuration(durationStr);
+      changed = true;
+    }
+    
+    if (_isAppLockEnabled != isEnabled) {
+      _isAppLockEnabled = isEnabled;
+      changed = true;
+    }
+    
+    if (changed) {
+      debugPrint('SecurityProvider: Settings synchronized. Enabled: $_isAppLockEnabled, Duration: $durationStr');
+      resetTimer();
+      notifyListeners();
+    }
   }
 
   void setLockDuration(String durationStr) {
@@ -80,12 +96,11 @@ class SecurityProvider with ChangeNotifier, WidgetsBindingObserver {
       default:
         _lockDuration = const Duration(days: 365); // Never
     }
-    resetTimer();
   }
 
   void resetTimer() {
     _autoLockTimer?.cancel();
-    if (_lockDuration == const Duration(days: 365) || _isLocked) return;
+    if (!_isAppLockEnabled || _lockDuration == const Duration(days: 365) || _isLocked) return;
     
     _autoLockTimer = Timer(_lockDuration, () {
       if (!_isLocked) {

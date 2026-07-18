@@ -2,12 +2,16 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import '../../models/user_model.dart';
+// import 'email_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  // Temporarily disabled SMTP Email Service
+  // final EmailService _emailService = EmailService();
 
   Stream<User?> get userStream => _auth.authStateChanges();
 
@@ -25,7 +29,7 @@ class AuthService {
       final url = await ref.getDownloadURL();
       return url;
     } catch (e) {
-      print('Error uploading profile picture: $e');
+      debugPrint('Error uploading profile picture: $e');
       return null;
     }
   }
@@ -34,7 +38,7 @@ class AuthService {
     try {
       await _storage.ref().child('profile_pictures').child('$userId.jpg').delete();
     } catch (e) {
-      print('Error deleting profile picture: $e');
+      debugPrint('Error deleting profile picture: $e');
     }
   }
 
@@ -46,21 +50,25 @@ class AuthService {
     String? country,
   }) async {
     try {
-      print('Attempting to sign up with: $email');
+      debugPrint('Attempting to sign up with: $email');
       UserCredential credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       if (credential.user != null) {
-        print('User created successfully: ${credential.user!.uid}');
+        debugPrint('User created successfully: ${credential.user!.uid}');
         
         // Auto-assign currency based on country
         String currency = 'GH₵';
         if (country != null) {
-          if (country == 'United States') currency = 'USD (\$)';
-          else if (country == 'United Kingdom') currency = 'GBP (£)';
-          else if (country == 'Europe') currency = 'EUR (€)';
+          if (country == 'United States') {
+            currency = 'USD (\$)';
+          } else if (country == 'United Kingdom') {
+            currency = 'GBP (£)';
+          } else if (country == 'Europe') {
+            currency = 'EUR (€)';
+          }
         }
 
         UserModel user = UserModel(
@@ -85,30 +93,33 @@ class AuthService {
           'isRead': false,
         });
 
+        // Temporarily disabled SMTP Welcome Email
+        // await _emailService.sendWelcomeEmail(email, fullName);
+
         // Phase 10: Ensure user is signed out after registration so they have to log in
         await _auth.signOut();
 
-        print('User document and welcome notification created, and signed out');
+        debugPrint('User document and welcome notification created, and signed out');
       }
       return credential;
     } on FirebaseAuthException catch (e) {
-      print('FirebaseAuthException during signUp: ${e.code} - ${e.message}');
+      debugPrint('FirebaseAuthException during signUp: ${e.code} - ${e.message}');
       rethrow;
     } catch (e) {
-      print('Generic error during signUp: $e');
+      debugPrint('Generic error during signUp: $e');
       rethrow;
     }
   }
 
   Future<UserCredential?> signIn(String email, String password) async {
     try {
-      print('Attempting to sign in with: $email');
+      debugPrint('Attempting to sign in with: $email');
       return await _auth.signInWithEmailAndPassword(email: email, password: password);
     } on FirebaseAuthException catch (e) {
-      print('FirebaseAuthException during signIn: ${e.code} - ${e.message}');
+      debugPrint('FirebaseAuthException during signIn: ${e.code} - ${e.message}');
       rethrow;
     } catch (e) {
-      print('Generic error during signIn: $e');
+      debugPrint('Generic error during signIn: $e');
       rethrow;
     }
   }
@@ -123,6 +134,15 @@ class AuthService {
       return UserModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
     }
     return null;
+  }
+
+  Stream<UserModel?> getUserDataStream(String uid) {
+    return _firestore.collection('users').doc(uid).snapshots().map((doc) {
+      if (doc.exists) {
+        return UserModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }
+      return null;
+    });
   }
 
   Future<void> updateUserData(UserModel user) async {

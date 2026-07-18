@@ -57,6 +57,8 @@ dependencies:
   http: ^1.2.0
   url_launcher: ^6.3.1
   telephony: ^0.2.0
+  mailer: ^7.1.0
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../core/services/auth_service.dart';
@@ -8,6 +9,7 @@ class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   UserModel? _userModel;
   bool _isLoading = false;
+  StreamSubscription? _userDocSubscription;
 
   UserModel? get user => _userModel;
   bool get isLoading => _isLoading;
@@ -15,18 +17,24 @@ class AuthProvider with ChangeNotifier {
   AuthProvider() {
     _authService.userStream.listen((User? user) async {
       debugPrint('Auth state changed: ${user != null ? "Logged In (${user.email})" : "Logged Out"}');
-      try {
-        if (user != null) {
-          _userModel = await _authService.getUserData(user.uid);
-          if (_userModel == null) {
-            debugPrint('User document not found in Firestore for UID: ${user.uid}');
+      
+      _userDocSubscription?.cancel();
+      
+      if (user != null) {
+        // Use a real-time listener for the user document to ensure state synchronization
+        _userDocSubscription = _authService.getUserDataStream(user.uid).listen((userData) {
+          if (userData != null) {
+            _userModel = userData;
+            debugPrint('User data synchronized for: ${_userModel?.email}');
+            debugPrint('Profile Picture URL: ${_userModel?.profilePictureUrl}');
+          } else {
+            debugPrint('User document does not exist in Firestore for UID: ${user.uid}');
           }
-        } else {
-          _userModel = null;
-        }
-        notifyListeners();
-      } catch (e) {
-        debugPrint('Error in AuthProvider user stream: $e');
+          notifyListeners();
+        }, onError: (e) {
+          debugPrint('Error listening to user document: $e');
+        });
+      } else {
         _userModel = null;
         notifyListeners();
       }
@@ -34,7 +42,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> login(String email, String password) async {
-    debugPrint('Login button pressed for: $email');
+    debugPrint('Login attempt for: $email');
     _setLoading(true);
     try {
       await _authService.signIn(email, password);
@@ -54,7 +62,7 @@ class AuthProvider with ChangeNotifier {
     String? phoneNumber,
     String? country,
   }) async {
-    debugPrint('Registration started for: $email');
+    debugPrint('Registration attempt for: $email');
     _setLoading(true);
     try {
       await _authService.signUp(
@@ -74,15 +82,21 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> logout() async {
-    debugPrint('Logging out user...');
+    debugPrint('Logging out...');
+    _userDocSubscription?.cancel();
     await _authService.signOut();
   }
 
   Future<void> updateUser(UserModel updatedUser) async {
     debugPrint('Updating user data in Firestore...');
-    await _authService.updateUserData(updatedUser);
-    _userModel = updatedUser;
-    notifyListeners();
+    try {
+      await _authService.updateUserData(updatedUser);
+      // We don't necessarily need to update _userModel and notifyListeners manually
+      // because the real-time listener in the constructor will handle it.
+    } catch (e) {
+      debugPrint('Failed to update user data: $e');
+      rethrow;
+    }
   }
 
   Future<void> uploadProfilePicture(File imageFile) async {
@@ -94,8 +108,10 @@ class AuthProvider with ChangeNotifier {
       if (url != null) {
         final updatedUser = _userModel!.copyWith(profilePictureUrl: () => url);
         await updateUser(updatedUser);
-        debugPrint('Profile picture uploaded and URL saved: $url');
+        debugPrint('Profile picture uploaded successfully. URL: $url');
       }
+    } catch (e) {
+      debugPrint('Error uploading profile picture: $e');
     } finally {
       _setLoading(false);
     }
@@ -109,14 +125,15 @@ class AuthProvider with ChangeNotifier {
       await _authService.removeProfilePicture(_userModel!.id);
       final updatedUser = _userModel!.copyWith(profilePictureUrl: () => null);
       await updateUser(updatedUser);
-      debugPrint('Profile picture removed successfully');
+    } catch (e) {
+      debugPrint('Error removing profile picture: $e');
     } finally {
       _setLoading(false);
     }
   }
 
   Future<void> updateUserPassword(String newPassword) async {
-    debugPrint('Changing user password...');
+    debugPrint('Updating password...');
     await _authService.changePassword(newPassword);
   }
 
@@ -128,5 +145,11 @@ class AuthProvider with ChangeNotifier {
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _userDocSubscription?.cancel();
+    super.dispose();
   }
 }

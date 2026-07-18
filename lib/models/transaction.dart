@@ -24,10 +24,22 @@ class TransactionModel {
 
   factory TransactionModel.fromMap(Map<String, dynamic> map, String id) {
     final category = (map['category'] ?? '').toString();
+    final typeString = (map['type'] ?? '').toString().toLowerCase();
+
+    TransactionType parsedType;
+    if (typeString.contains('income')) {
+      parsedType = TransactionType.income;
+    } else if (typeString.contains('transfer')) {
+      parsedType = TransactionType.transfer;
+    } else {
+      parsedType = TransactionType.expense;
+    }
 
     DateTime parsedDate;
     if (map['date'] is Timestamp) {
       parsedDate = (map['date'] as Timestamp).toDate();
+    } else if (map['date'] is String) {
+      parsedDate = DateTime.tryParse(map['date']) ?? DateTime.now();
     } else {
       parsedDate = DateTime.now();
     }
@@ -38,10 +50,7 @@ class TransactionModel {
       amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
       date: parsedDate,
       category: category,
-      type: TransactionType.values.firstWhere(
-            (e) => e.toString() == map['type'],
-        orElse: () => TransactionType.expense,
-      ),
+      type: parsedType,
       icon: _getCategoryIcon(category),
     );
   }
@@ -59,9 +68,11 @@ class TransactionModel {
   static IconData _getCategoryIcon(String category) {
     switch (category.toLowerCase()) {
       case 'food':
+      case 'food & dining':
         return Icons.restaurant;
 
       case 'transport':
+      case 'transportation':
         return Icons.directions_car;
 
       case 'shopping':
@@ -72,9 +83,11 @@ class TransactionModel {
         return Icons.account_balance_wallet;
 
       case 'bills':
+      case 'utilities':
         return Icons.receipt_long;
 
       case 'health':
+      case 'healthcare':
         return Icons.local_hospital;
 
       case 'education':
@@ -85,6 +98,21 @@ class TransactionModel {
 
       case 'savings':
         return Icons.savings;
+        
+      case 'investment':
+        return Icons.trending_up;
+        
+      case 'transfers':
+        return Icons.compare_arrows;
+
+      case 'mobile money':
+        return Icons.phone_android;
+
+      case 'bank deposit':
+        return Icons.account_balance;
+
+      case 'atm withdrawal':
+        return Icons.atm;
 
       default:
         return Icons.help_outline;

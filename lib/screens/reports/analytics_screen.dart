@@ -12,7 +12,6 @@ class AnalyticsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final txProvider = context.watch<TransactionProvider>();
     final transactions = txProvider.transactions;
-    final colorScheme = Theme.of(context).colorScheme;
     
     // Group transactions by category for expenses only
     final expenseMap = <String, double>{};
